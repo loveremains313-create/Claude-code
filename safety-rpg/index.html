@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>小安的安全班次</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 像一款可愛的工廠 RPG，班長與同事用口語對話，結果卡講清楚法規
+   IDEA: 俯視角 Q 版工廠地圖，一個班次的任務清單
+   PICTURE: canvas 繪製的整座 LED 產線與會走動的 Q 版人物
+   COLOUR and TYPE: 混凝土灰地坪、安全黃走道、清華紫介面；Noto Sans TC／微軟正黑體
+   LAYOUT: 上方標題，中間遊戲畫面＋對話框，下方任務與道具列 */
+:root{color-scheme:light dark;--bg:light-dark(#efedf3,#17141c);--panel:light-dark(#fff,#241f2b);--ink:light-dark(#1d1a22,#f2eff6);--mute:light-dark(#625c6c,#aaa3b5);--p:#6a1b9a;--pl:light-dark(#f3e5f5,#35233f);--y:#ffc400;--r:#d7261e;--g:#13895a;--line:light-dark(#ddd6e6,#3b3443)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans TC","Microsoft JhengHei","微軟正黑體",sans-serif;overflow-x:clip}
+header{background:var(--p);color:#fff;padding:12px max(3vw,14px);display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:clamp(20px,2.6vw,28px);font-weight:900}
+header p{margin:0;font-size:14px;opacity:.9}
+.wrap{max-width:1240px;margin:0 auto;padding:14px max(3vw,14px) 28px}
+.stage{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px #0004;background:#2d3136}
+canvas{display:block;width:100%;height:auto;image-rendering:auto;touch-action:none}
+.hud{position:absolute;left:10px;top:10px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
+.chip{background:#000a;color:#fff;font-size:13px;padding:4px 10px;border-radius:14px;display:flex;gap:6px;align-items:center}
+.hp{width:90px;height:9px;background:#555;border-radius:5px;overflow:hidden}.hp i{display:block;height:100%;background:#2ecc71;transition:width .3s}
+.obj{position:absolute;right:10px;top:10px;max-width:min(380px,55%);background:#1d1a22e6;color:#fff;border-radius:12px;padding:8px 12px;font-size:14px;pointer-events:none;border:2px solid var(--y)}
+.obj b{color:var(--y)}
+.dlg{position:absolute;left:12px;right:12px;bottom:12px;background:var(--panel);color:var(--ink);border-radius:14px;border:3px solid var(--p);display:none;gap:14px;padding:12px 14px;box-shadow:0 8px 24px #0006;max-height:72%;overflow:auto}
+.dlg.show{display:flex}
+.por{flex:none;width:84px;height:84px;border-radius:12px;background:var(--pl)}
+.dlg .nm{font-weight:900;color:var(--p);font-size:15px}
+:root[data-theme=dark] .dlg .nm{color:#d6a6f0}
+.dlg .tx{font-size:16px;min-height:48px}
+.ch{display:grid;gap:8px;margin-top:8px}
+button{font:inherit;cursor:pointer;border-radius:10px;min-height:44px}
+button:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+.ch button{text-align:left;padding:8px 12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.ch button:hover{border-color:var(--p);background:var(--pl)}
+.ch button b{color:var(--p);margin-right:6px}
+.next{margin-top:6px;background:var(--p);color:#fff;border:0;padding:6px 16px;font-weight:700}
+.below{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;margin-top:14px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+.box h3{margin:0 0 6px;font-size:16px}
+.ql{list-style:none;margin:0;padding:0;font-size:14px}.ql li{padding:3px 0;color:var(--mute)}.ql li.on{color:var(--ink);font-weight:700}.ql li.ok{color:var(--g)}.ql li.warn{color:#c77700}
+.inv{display:flex;flex-wrap:wrap;gap:6px;font-size:13px}.inv span{background:var(--pl);padding:3px 10px;border-radius:12px}
+.help{font-size:13px;color:var(--mute);margin:6px 0 0}
+.ov{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+.ov.show{display:flex}
+.sign{width:min(640px,100%);max-height:92vh;overflow:auto;border-radius:16px;background:var(--panel)}
+.sign .hd{padding:16px 20px;color:#fff;font-weight:900;font-size:clamp(22px,3.6vw,32px)}
+.sign.ok .hd{background:var(--g)}.sign.hurt .hd{background:#e07b00}.sign.dead .hd{background:#111;border-bottom:6px solid var(--r)}.sign.warn .hd{background:var(--y);color:#111}.sign.end .hd{background:var(--p)}
+.sign .bd{padding:16px 20px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.cmp div{padding:10px 12px;border-radius:10px;font-size:14px}.cmp .you{background:light-dark(#fde6e4,#3b2220)}.cmp .right{background:light-dark(#e2f4ea,#1d3328)}.cmp h4{margin:0 0 4px;font-size:13px}
+.law{font-size:13px;color:var(--mute);border-top:1px dashed var(--line);padding-top:8px;margin:8px 0 0;padding-left:18px}
+.primary{background:var(--p);color:#fff;border:0;padding:10px 20px;font-weight:700;margin-top:12px}
+.flash{animation:fl .45s}@keyframes fl{50%{filter:brightness(1.8) saturate(2) hue-rotate(-30deg)}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}}
+
+.mbar{display:none;align-items:center;gap:10px;padding:8px 10px;background:var(--p);color:#fff;font-size:15px;flex:none}
+.mbar b.t{flex:1;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mbtn{min-height:40px;padding:4px 12px;border-radius:20px;border:2px solid #fff8;background:#ffffff22;color:#fff;font-weight:700;touch-action:manipulation}
+.actb{position:absolute;right:14px;bottom:18px;display:none;width:104px;height:104px;border-radius:50%;background:var(--p);color:#fff;border:4px solid #fff;font-weight:900;font-size:15px;line-height:1.25;box-shadow:0 6px 18px #0007;touch-action:manipulation;padding:4px}
+.actb.on{display:block}
+.hint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);background:#000c;color:#fff;font-size:14px;padding:8px 14px;border-radius:16px;pointer-events:none;white-space:nowrap;display:none}
+.drawer{position:fixed;inset:0;background:#000a;display:none;z-index:8;align-items:flex-end}
+.drawer.show{display:flex}
+.drawer .in{background:var(--panel);color:var(--ink);width:100%;max-height:80dvh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 18px 22px}
+.drawer h3{margin:8px 0 6px}
+.stage{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.mob{overflow:hidden;height:100dvh}
+body.mob header,body.mob .below,body.mob footer,body.mob .hud{display:none}
+body.mob .wrap{padding:0;height:100dvh;display:flex;flex-direction:column;max-width:none}
+body.mob .mbar{display:flex}
+body.mob .stage{flex:1;min-height:0;border-radius:0;box-shadow:none}
+body.mob canvas{width:100%;height:100%}
+body.mob .obj{left:8px;right:8px;top:8px;max-width:none;font-size:14px;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.mob .dlg{left:0;right:0;bottom:0;border-radius:18px 18px 0 0;border-width:3px 0 0;max-height:66%;padding:14px 14px 18px;gap:10px}
+body.mob .por{width:56px;height:56px}
+body.mob .dlg .tx{font-size:17px}
+body.mob .ch button{min-height:54px;font-size:16px;padding:10px 12px}
+body.mob .next{min-height:50px;width:100%;font-size:17px}
+body.mob .sign .bd{font-size:15px}
+body.mob .primary{width:100%;min-height:52px;font-size:17px}
+@media(max-width:820px){.below{grid-template-columns:1fr}.cmp{grid-template-columns:1fr}.obj{font-size:12px;max-width:60%}.por{width:56px;height:56px}}
+footer{font-size:12px;color:var(--mute);margin-top:12px}
+</style>
+</head>
+<body>
+<header><h1>小安的安全班次｜LED 產線工安 RPG</h1><p>走動・對話・接任務・排除隱患・設計防呆，選錯會受傷甚至殉職</p></header>
+<div class="wrap">
+ <div class="mbar"><b class="t">小安的安全班次</b><span>❤ <b id="mhp">100</b></span><span>🛡 <b id="mbc">0</b>/6</span><button class="mbtn" id="menu">📋 任務</button></div>
+ <div class="stage" id="stage">
+  <canvas id="cv" width="1040" height="600" aria-label="工廠地圖"></canvas>
+  <div class="hud"><div class="chip">❤ <div class="hp"><i id="hpb" style="width:100%"></i></div><span id="hpt">100</span></div><div class="chip">✚ 受傷 <b id="ic">0</b></div><div class="chip">✖ 殉職 <b id="dc">0</b></div><div class="chip">🛡 防呆 <b id="bc">0</b>/6</div></div>
+  <div class="obj" id="obj"></div>
+  <div class="dlg" id="dlg"><canvas class="por" id="por" width="84" height="84"></canvas><div style="flex:1"><div class="nm" id="nm"></div><div class="tx" id="tx"></div><div class="ch" id="ch"></div></div></div>
+  <button class="actb" id="act">互動</button>
+  <div class="hint" id="hint">按住畫面拖曳＝移動　點一下＝走過去／對話</div>
+ </div>
+ <div class="below">
+  <div class="box"><h3>任務清單</h3><ul class="ql" id="ql"></ul></div>
+  <div class="box"><h3>道具</h3><div class="inv" id="inv"></div><p class="help">操作：方向鍵／WASD 移動，空白鍵或 E 對話與互動，數字鍵 1–4 選擇。也可以直接點地圖走過去、點人物對話；手機用左下方向鍵與「互動」。</p></div>
+ </div>
+ <footer>教學用情境遊戲：場景改編自小組現場稽核照片；法規條號依《職業安全衛生法》《職業安全衛生設施規則》現行版本。人物與傷亡情節皆為虛構示意。</footer>
+</div>
+<div class="drawer" id="drawer"><div class="in"><h3>任務清單</h3><ul class="ql" id="ql2"></ul><h3>道具</h3><div class="inv" id="inv2"></div><button class="primary" id="close">回到遊戲</button></div></div>
+<div class="ov" id="ov"><div class="sign" id="sign"></div></div>
+<script>
+{
+const $=s=>document.querySelector(s), cv=$('#cv'), cx=cv.getContext('2d'), TS=40, COLS=26, ROWS=15, VW=1040, VH=600;
+const MOB=matchMedia('(max-width:820px),(pointer:coarse)').matches;if(MOB)document.body.classList.add('mob');
+const view={s:1,x:0,y:0,w:VW,h:VH};let dpr=1;
+function resize(){const r=$('#stage').getBoundingClientRect();dpr=Math.min(2,devicePixelRatio||1);const W=r.width;let H;
+ if(MOB){H=r.height;view.s=Math.max(Math.min(W/(9*TS),H/(7*TS)),W/VW,H/VH)}else{H=W*VH/VW;view.s=W/VW}
+ cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);view.w=W/view.s;view.h=H/view.s}
+new ResizeObserver(resize).observe($('#stage'));addEventListener('resize',resize);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* ---------- 地圖 ---------- */
+const solid=[...Array(ROWS)].map((_,y)=>[...Array(COLS)].map((_,x)=>x==0||y==0||y==ROWS-1||x==23));
+solid[2][23]=false; solid[12][23]=false; // 出口 A、側門 B
+const zones=[[1,1,4,3,'更衣室／入口','#4a4f57'],[6,1,4,3,'耐壓測試站','#4f4a3a'],[12,1,4,3,'漏電流測試站','#4f4a3a'],[17,1,5,2,'工具櫃／物料架','#3f4a52'],
+ [1,8,4,5,'配電盤 MCC','#3f4552'],[6,8,5,5,'環境試驗箱','#523f3f'],[13,8,5,4,'目檢工位','#3a4f4a'],[16,11,7,3,'輸送帶組裝區','#45453f']];
+const O={}; // 物件
+function obj(id,x,y,w,h,o){O[id]={id,x,y,w,h,on:true,...o};}
+obj('cab1',7,1,2,1,{draw:'cab'});obj('tester',9,1,1,1,{draw:'tester',lbl:'2.5kV'});obj('box',9,3,1,1,{draw:'box',hz:1});
+obj('cab2',13,1,2,1,{draw:'cab'});obj('cart',12,2,1,1,{draw:'cart'});obj('meter',15,1,1,1,{draw:'tester',lbl:'3.57mA'});
+obj('tool',17,1,2,1,{draw:'tool',lbl:'工具櫃'});obj('shelf',20,1,2,1,{draw:'shelf',lbl:'物料架'});
+obj('mcc',1,8,1,3,{draw:'mcc'});obj('lockbox',1,12,1,1,{draw:'lockbox'});
+obj('oven',7,8,3,2,{draw:'oven'});obj('desk',13,8,4,1,{draw:'desk'});obj('rack',14,10,2,1,{draw:'rack',hz:1});
+obj('belt',17,11,5,1,{draw:'belt'});obj('cart2',18,13,1,1,{draw:'cart',hz:1});obj('pallet',22,12,1,1,{draw:'pallet',hz:1});obj('fan',16,13,1,1,{draw:'fan',hz:1});
+const walk=(x,y)=>(y==5||y==6)&&x>0&&x<23||x==11&&y>=5&&y<=13;
+function rebuildSolid(){for(const k in O){const o=O[k];for(let i=0;i<o.w;i++)for(let j=0;j<o.h;j++)solid[o.y+j][o.x+i]=o.on}if(typeof N!='undefined')for(const k in N)solid[N[k].y][N[k].x]=true}
+/* ---------- 人物 ---------- */
+const P={x:2.5*TS,y:3.5*TS,dir:'d',f:0,moving:false,hp:100,path:[],hurtT:0};
+const N={
+ boss:{n:'王組長',x:3,y:2,c:'#6a1b9a',hat:'#fff',hair:'#333'},
+ ming:{n:'技術員 阿明',x:7,y:3,c:'#1e5aa8',hat:'#ffc400',hair:'#222'},
+ mei:{n:'作業員 小美',x:14,y:3,c:'#d14d8a',hat:'#fff',hair:'#5a2a1a',long:1},
+ jie:{n:'維修課 阿傑',x:3,y:9,c:'#2e7d32',hat:'#ffc400',hair:'#222'},
+ lin:{n:'品保 小林',x:8,y:11,c:'#0d7680',hat:'#fff',hair:'#333'},
+ fang:{n:'目檢員 阿芳',x:14,y:9,c:'#e07b00',hat:'#fff',hair:'#3b2418',long:1},
+ zhang:{n:'老張',x:19,y:12,c:'#455a64',hat:'#fff',hair:'#aaa',bend:1}};
+function chibi(c,x,y,o,dir='d',f=0,scale=1){
+ c.save();c.translate(x,y);c.scale(scale,scale);
+ c.fillStyle='#0004';c.beginPath();c.ellipse(0,16,13,5,0,0,7);c.fill();
+ const sw=Math.sin(f)*4;
+ c.fillStyle='#2b2b33';c.fillRect(-7,6+(o.bend?-2:0),5,10+sw*.4);c.fillRect(2,6+(o.bend?-2:0),5,10-sw*.4);
+ c.save();if(o.bend)c.rotate(.35);
+ c.fillStyle=o.c;c.beginPath();c.roundRect(-10,-6,20,15,6);c.fill();
+ c.fillStyle='#ffffff55';c.fillRect(-10,-1,20,3);
+ c.fillStyle='#f6d2b0';c.beginPath();c.arc(0,-17,13,0,7);c.fill();
+ c.fillStyle=o.hair;c.beginPath();c.arc(0,-19,13,Math.PI*1.05,Math.PI*1.95);c.fill();
+ if(o.long){c.fillRect(-13,-19,5,14);c.fillRect(8,-19,5,14)}
+ c.fillStyle=o.hat;c.beginPath();c.arc(0,-21,13.5,Math.PI,0);c.fill();c.fillRect(-15,-22,30,4);
+ if(dir!='u'){const ex=dir=='l'?-4:dir=='r'?4:0;c.fillStyle='#222';c.beginPath();c.arc(-5+ex,-15,2.2,0,7);c.arc(5+ex,-15,2.2,0,7);c.fill();
+  c.fillStyle='#ff8a8a88';c.beginPath();c.arc(-9+ex,-10,2.5,0,7);c.arc(9+ex,-10,2.5,0,7);c.fill();
+  c.strokeStyle='#7a3b2e';c.lineWidth=1.5;c.beginPath();c.arc(ex,-11,3,.2,Math.PI-.2);c.stroke()}
+ c.restore();c.restore();
+}
+const PLAYER={c:'#1e3a8a',hat:'#ffc400',hair:'#2b1a10'};
+/* ---------- 狀態與任務 ---------- */
+const S={step:0,sub:0,inv:new Set(),flags:new Set(),inj:0,dead:0,done:{},fire:null,smoke:new Map(),t:0,ended:false,side:{pallet:0,fan:0},cp:{x:2.5,y:3.5},badge:{},prev:{}};
+const QUESTS=[['q0','向王組長報到'],['q1','耐壓測試站：協助阿明'],['q2','漏電流測試站：協助小美'],['q3','配電盤：上鎖掛牌維修'],['q4','環境試驗箱：協助小林'],['q5','目檢工位：協助阿芳'],['q6','輸送帶：協助老張'],['q7','回報王組長'],['q8','火警！疏散到集合點']];
+const fNames={box:'耐壓站紙箱',cart:'漏電流站推車未鎖',wood:'試驗箱碳化木塊',bag:'目檢燈塑膠袋',loto:'上鎖掛牌只靠口頭提醒',pal:'出口 B 棧板又堆回來'};
+const firePos={box:[9,3],wood:[8,10],bag:[15,9]};
+function objective(){const s=S.step,u=S.sub,I=S.inv;
+ const m={0:['和王組長說話','boss'],1:u==0?['到耐壓測試站找阿明','ming']:u==1?['移除壓著測試線的紙箱','box']:u==2?['到物料架拿絕緣墊','shelf']:['把絕緣墊交給阿明','ming'],
+ 2:u==0?['到漏電流站找小美','mei']:u==1?['到工具櫃挑一雙絕緣手套','tool']:['把手套帶回給小美','mei'],
+ 3:u==0?['到配電盤找阿傑','jie']:u==1?['到鎖具箱拿個人鎖與標示牌','lockbox']:['回到阿傑身邊執行上鎖掛牌','jie'],
+ 4:u==0?['到環境試驗箱找小林','lin']:u==1?['到工具櫃拿隔熱手套','tool']:['回試驗箱處理','lin'],
+ 5:u==0?['到目檢工位找阿芳','fang']:u==1?['到物料架拿阻燃遮光罩','shelf']:u==2?['回目檢工位換上遮光罩','fang']:['移開阿芳椅子後方的層架','rack'],
+ 6:['到輸送帶找老張','zhang'],7:['回入口向王組長回報（支線：清除棧板、立扇）','boss'],8:['依綠色標示從出口 A 疏散到集合點','exitA']};
+ return m[s]||['',null]}
+function tgtXY(k){if(k=='exitA')return[24.5,2.5];if(N[k])return[N[k].x+.5,N[k].y+.5];const o=O[k];return[o.x+o.w/2,o.y+o.h/2]}
+/* ---------- 對話系統 ---------- */
+let dq=[],dlgOn=false,choiceCb=null;
+function drawPor(who){const c=$('#por').getContext('2d');c.clearRect(0,0,84,84);c.fillStyle='#f3e5f5';c.fillRect(0,0,84,84);const o=who=='you'?PLAYER:N[who]||{c:'#6a1b9a',hat:'#fff',hair:'#333'};chibi(c,42,66,{...o,bend:0},'d',0,1.9)}
+function say(list,cb){dq=list.slice();dq.cb=cb;dlgOn=true;nextLine()}
+function nextLine(){const L=dq.shift();if(!L){$('#dlg').classList.remove('show');dlgOn=false;const cb=dq.cb;dq.cb=null;cb&&cb();return}
+ $('#dlg').classList.add('show');drawPor(L[0]);$('#nm').textContent=L[0]=='you'?'小安（你）':L[0]=='pa'?'廣播':N[L[0]]?.n||L[0];$('#tx').textContent=L[1];
+ const ch=$('#ch');choiceCb=null;
+ if(L[2]){ch.innerHTML=L[2].map((o,i)=>`<button data-i="${i}"><b>${i+1}</b>${esc(o.t)}</button>`).join('');choiceCb=i=>{const o=L[2][i];$('#dlg').classList.remove('show');dlgOn=false;dq=[];o.go()};
+  ch.querySelectorAll('button').forEach(b=>b.onclick=()=>choiceCb(+b.dataset.i));if(!MOB)ch.querySelector('button').focus()}
+ else{ch.innerHTML='<div><button class="next" id="nx">繼續 ▶</button></div>';$('#nx').onclick=nextLine;if(!MOB)$('#nx').focus()}}
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+/* ---------- 結果卡 ---------- */
+const LAW={
+1:['設施規則 §3：超過 600 V 至 22,800 V 為「高壓」','設施規則 §241：帶電部分應設防止感電之護圍或絕緣被覆','設施規則 §253：不得於通路上使用臨時配線或移動電線'],
+2:['設施規則 §243：設高敏感度、高速型漏電斷路器','設施規則 §246：防止絕緣被破壞或老化致感電','設施規則 §256：低壓活線作業應戴用絕緣用防護具','設施規則 §272：絕緣用防護具每 6 個月檢驗一次，使用前自行檢點'],
+3:['設施規則 §254：電路開路後作業應上鎖或標示、放電、檢電','設施規則 §57：機械檢修時停止運轉並上鎖或設置標示'],
+4:['設施規則 §22 第 2 項：高溫表面應設警示標誌及隔熱設施','設施規則 §287：暴露高溫之虞者應置備防護具並確實使用','職安法 §6 第 1 項第 3 款：防止電、熱引起之危害'],
+5:['設施規則 §313：光線分佈均勻、明暗比適當、避免刺目眩耀','設施規則 §313 照度表：零件組合、普通檢查 200 米燭光以上','設施規則 §31：設備間通道不得小於 80 公分'],
+6:['職安法 §6 第 2 項第 1 款：重複性作業促發肌肉骨骼疾病之預防','設施規則 §324-1：人因性危害預防措施','設施規則 §21、§31：通道保持不致跌倒，主要人行道不小於 1 公尺','設施規則 §159：物料堆放不得阻礙交通或出入口'],
+9:['職安法 §23：訂定職業安全衛生管理計畫，實施安全衛生管理及自動檢查','職安法 §32：雇主應施以預防災變所必要之安全衛生教育訓練','職安法施行細則 §31：管理計畫包括工作環境或作業危害之辨識、評估及控制等事項'],
+8:['職安法 §6 第 2 項第 4 款：避難、急救等事項','設施規則 §34：緊急避難出口、通道應標示並維持隨時可用','設施規則 §159：物料堆放不得阻礙出入口']};
+function result(kind,o,next){
+ if(kind=='hurt'){S.inj++;P.hp=Math.max(0,P.hp-(o.dmg||35));P.hurtT=40;$('#stage').classList.add('flash');setTimeout(()=>$('#stage').classList.remove('flash'),450);if(P.hp<=0){kind='dead';o={...o,why:o.why+'傷勢累積，健康值歸零。'}}}
+ if(kind=='dead'){S.dead++}
+ if(kind=='warn'&&o.flag)S.flags.add(o.flag);
+ const head=o.head||{ok:'✔ 安全，繼續作業',warn:'⚠ 過關，但留下隱患',hurt:'✚ 受傷！先送醫包紮',dead:'✖ 殉職事故'}[kind];
+ const box=$('#sign');box.className='sign '+kind;
+ box.innerHTML=`<div class="hd">${head}</div><div class="bd">${o.t?`<p><b>你的行動：</b>${esc(o.t)}</p>`:''}<p>${esc(o.why)}</p>
+ ${o.right?`<div class="cmp"><div class="you"><h4>你的做法</h4>${esc(o.t||'')}</div><div class="right"><h4>正確做法</h4>${esc(o.right)}</div></div>`:''}
+ ${o.law?`<ul class="law">${LAW[o.law].map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+ <button class="primary" id="go">${kind=='dead'?'從檢查點重來':kind=='hurt'?'包紮後再試一次':'繼續'}</button></div>`;
+ $('#ov').classList.add('show');$('#go').focus();
+ $('#go').onclick=()=>{$('#ov').classList.remove('show');
+  if(kind=='dead'){P.hp=100;P.x=S.cp.x*TS;P.y=S.cp.y*TS;P.path=[];if(S.step==8)resetFire()}
+  (kind=='ok'||kind=='warn')?next&&next():o.retry&&o.retry();ui()};
+}
+function finishQuest(n,kind,after){if(kind=='ok'&&PREV[n]&&!S.prev[n]){S.prev[n]=1;return prevent(n,()=>finishQuest(n,kind,after))}
+ S.done['q'+n]=kind;S.step=n+1;S.sub=0;S.cp={x:P.x/TS,y:P.y/TS};ui();after&&after()}
+const PREV={
+1:['ming',['櫃門與圍籬加裝安全連鎖：門一開就切斷高壓輸出；地面劃紅色禁放區','貼一張「請勿放紙箱」標語，晨會再宣導一次','抓到放紙箱的人就記過'],'紙箱又被下一班放回測試機旁',()=>{O.box.on=true;rebuildSolid();S.flags.add('box')},'門開即斷電：做錯也傷不到人（防止型防呆）；紅色禁區讓違規一眼被看見（偵測型）。'],
+2:['mei',['工具借用登錄檢驗日，過期手套系統自動鎖定不能借；接線盒蓋加微動開關，蓋沒關就不能通電','在工具櫃貼「記得看標籤」','請小美以後自己記得檢查'],'下一班又借到過期手套、推車又沒鎖',()=>S.flags.add('cart'),'過期就借不出來、蓋沒關就通不了電：不靠記憶，錯誤直接被擋下。'],
+3:['jie',['能源隔離點加鎖扣、一人一鎖一鑰，未上鎖無法開維修門；搭配維修許可單','口頭提醒維修人員記得上鎖','出事再追究責任'],'下次有人趕時間跳過上鎖',()=>S.flags.add('loto'),'實體鎖扣讓「沒上鎖就送電」做不到；許可單讓流程可追蹤稽核。'],
+4:['lin',['試驗箱門鎖與箱溫連鎖，溫度沒降門打不開；改用專用治具，形狀上就墊不進木塊','在箱門貼「小心燙」','交代小林以後記得換墊材'],'催貨時又有人墊回木塊',()=>S.flags.add('wood'),'溫度連鎖讓人無法在高溫時開門；治具形狀限定讓錯誤墊材放不進去。'],
+5:['fang',['改用內建遮光的標準燈具並列為公司料號，禁止自製遮蔽物，納入 5S 稽核','請大家不要再用塑膠袋','旁邊放一支滅火器就好'],'夜班覺得太亮，又套上塑膠袋',()=>S.flags.add('bag'),'標準燈具本身就遮光，沒有理由再自製；5S 稽核定期確認沒有回流。'],
+6:['zhang',['推車換成放手即煞的煞車，黃線定位格＋未歸位目視檢查；作業台改升降式','跟老張說轉身要小心','推車上貼「請鎖煞車」'],'棧板和推車又堆回走道',()=>{O.pallet.on=true;rebuildSolid();S.side.pallet=0;S.flags.add('pal')},'放手即煞＝忘了鎖也不會滑走；升降作業台從源頭消除彎腰。']};
+function prevent(n,cb){const[who,opts,recur,apply,goodWhy]=PREV[n];
+ const list=shuffle(opts.map((t,i)=>({t,go:()=>i==0?(S.badge[n]=1,result('ok',{t,why:'🛡 防呆生效：'+goodWhy,law:9,head:'🛡 防呆生效，不會再發生'},cb)):result('warn',{t,why:`治標不治本：標語、宣導、處罰都靠人的記憶與自律。結果——${recur}。`,right:opts[0],law:9,head:'⚠ 隱患復發'},()=>{apply();cb()})})));
+ say([[who,'這次處理好了！可是下一班的人不知道，過幾天可能又變回原樣……'],['boss','（無線電）小安，改善之後還要「防堵」。你覺得怎麼做才能讓它不再發生？',list]])}
+/* ---------- 各 NPC 與物件互動 ---------- */
+const H={
+boss(){if(S.step==0)say([['boss','小安早！我是王組長。今天線上有幾個「先這樣用」的克難做法，你跟著我巡一輪，把隱患一個一個處理掉。'],['boss','記住：任何設備在動、在通電，就不要伸手。先停、先隔離、先確認。'],['boss','第一站，耐壓測試站的阿明在找人幫忙，去吧！右上角黃色框是你的目前任務。']],()=>finishQuest(0,'ok'));
+ else if(S.step==7)say([['boss','辛苦了！六站都巡完了。'],['you','組長，還有棧板跟立扇……'],['pa','（警報聲）嗶——嗶——火警！火警！'],['boss','是真的火警！小安，你要怎麼做？',[
+  {t:'先回目檢工位拿手機和外套再走',go:()=>result('dead',{t:'回工位拿手機',why:'你折返進入濃煙區，煙層快速下降，在走道上失去方向倒下。',right:'聽到警報立即依標示疏散，不折返拿私人物品。',law:8})},
+  {t:'壓低身體，依綠色標示往出口 A 疏散，到集合點報到',go:()=>{startFire();say([['boss','好！我去清點人數，集合點見！出口 A 在右上角綠色門。']])}},
+  {t:'走最近的側門 B，比較快',go:()=>{startFire();say([['boss','側門 B 前面還堆著東西……小心！你自己判斷，跟著標示走最安全。']])}}]]]);
+ else say([['boss',S.step>=8?'快疏散！':'先完成目前任務，右上角有提示喔。']])},
+ming(){if(S.step<1)return say([['ming','你先去跟組長報到吧。']]);if(S.step>1)return say([['ming','謝啦！有絕緣墊踩起來安心多了。']]);
+ if(S.sub==0)say([['ming','小安你來得剛好！耐壓測試正在跑，輸出 2.5 kV。'],['ming','夾具好像鬆了，你順手幫我壓一下好嗎？我手上在記錄。',[
+  {t:'伸手把高壓夾按緊，反正很快',go:()=>result('dead',{t:'測試中伸手壓高壓夾',why:'2.5 kV 經手臂流向接地的金屬機櫃，電擊造成心室顫動。',right:'按 STOP 停止輸出 → 放電棒放電 → 檢電確認無電壓 → 才調整夾具。',law:1})},
+  {t:'戴棉紗手套再去壓',go:()=>result('dead',{t:'戴棉紗手套壓高壓夾',why:'棉紗手套不是絕緣用防護具，汗濕更導電，高壓直接擊穿。',right:'不在通電狀態下接觸；停機、放電、檢電後再作業。',law:1})},
+  {t:'請阿明按 STOP，用放電棒放電、檢電確認後再調整',go:()=>say([['ming','有道理，停機放電，檢電歸零……好了，夾具重新夾好。'],['ming','對了，接地線壓在紙箱上、測試線還橫過走道，你幫我把紙箱拿走，再去物料架拿一塊絕緣墊來。']],()=>{S.sub=1;ui()})},
+  {t:'按 STOP 後直接調整，紙箱跟線之後再說',go:()=>result('warn',{t:'只停機，不處理紙箱與通道電線',flag:'box',why:'這次沒有感電，但紙箱仍緊貼電氣、測試線還橫跨走道，留下火災與絆倒隱患。',right:'停機後還要放電、檢電，並移除可燃物、把電線移出通道。',law:1},()=>finishQuest(1,'warn'))}]]]);
+ else if(S.sub==3){S.inv.delete('絕緣墊');say([['ming','絕緣墊鋪好了，測試線也改走線槽，乾淨多了！']],()=>result('ok',{t:'停機放電檢電、移除紙箱、鋪設絕緣墊',why:'能量歸零後才接觸，同時移除可燃物與通道上的移動電線。',law:1},()=>finishQuest(1,'ok')))}
+ else say([['ming',S.sub==1?'紙箱在測試機右下方。':'物料架在右上角，工具櫃旁邊。']])},
+box(){if(S.step>1&&O.box.on){O.box.on=false;rebuildSolid();S.flags.delete('box');return say([['you','又把紙箱搬走了……下次要從根本防堵才行。']])}if(S.step==1&&S.sub==1){O.box.on=false;rebuildSolid();say([['you','紙箱移到回收區了，接地線不再壓著可燃物。']],()=>{S.sub=2;ui()})}else say([['you','一個瓦楞紙箱，上面壓著測試線……']])},
+shelf(){if(S.step==1&&S.sub==2){S.inv.add('絕緣墊');say([['you','拿到「絕緣橡膠墊（IEC 61111）」。']],()=>{S.sub=3;ui()})}
+ else if(S.step==5&&S.sub==1){S.inv.add('阻燃遮光罩');say([['you','拿到「UL 94 V-0 阻燃遮光罩」，上面有散熱孔。']],()=>{S.sub=2;ui()})}
+ else say([['you','物料架：絕緣墊、遮光罩、黃線膠帶……目前用不到。']])},
+mei(){if(S.step<2)return say([['mei','嗨～我在等人來幫忙。']]);if(S.step>2)return say([['mei','現在端子都收進接線盒了，好放心。']]);
+ if(S.sub==0)say([['mei','漏電流量到 3.57 mA，要接續量測下一組。端子台就放在紙板上，接頭只纏了膠帶……'],['mei','這是活電量測，你去工具櫃拿一雙絕緣手套來好嗎？']],()=>{S.sub=1;ui()});
+ else if(S.sub==1)say([['mei','工具櫃在右上角喔。']]);
+ else if(S.inv.has('絕緣手套（過期）'))result('hurt',{t:'戴 10 個月前檢驗的絕緣手套接端子',dmg:40,why:'手套有細微龜裂，活電經裂縫導通，手部電擊灼傷。',right:'絕緣防護具每 6 個月檢驗一次、使用前自行檢點，不合格立即更換。',law:2,retry:()=>{S.inv.delete('絕緣手套（過期）');S.sub=1;say([['mei','天啊你還好嗎？那雙標籤過期了，去換一雙有效的！']])}});
+ else say([['mei','手套標籤在有效期內，也檢點過了。那端子台跟推車要怎麼處理？',[
+  {t:'端子台裝進有防護蓋的絕緣接線盒，鎖住推車煞車，確認漏電斷路器',go:()=>result('ok',{t:'接線盒包覆＋鎖推車＋漏電斷路器',why:'帶電體被包覆、移動源被固定，再加上合格防護具，三層防護到位。',law:2},()=>finishQuest(2,'ok'))},
+  {t:'有手套就好，直接開始量測',go:()=>result('warn',{t:'只靠手套，端子與推車維持原樣',flag:'cart',why:'這次沒事，但推車沒鎖、端子外露的風險還在現場。',right:'防護具是最後一道防線，先用接線盒與固定推車消除危害。',law:2},()=>finishQuest(2,'warn'))},
+  {t:'低壓而已，把手套脫掉比較好施力',go:()=>result('dead',{t:'低壓活線作業不戴手套',why:'110／220 V 交流電通過人體同樣致命。',right:'低壓活線作業也必須戴絕緣用防護具或使用活線器具。',law:2})}]]])},
+tool(){if(S.step==2&&S.sub==1)say([['you','工具櫃裡有兩雙絕緣手套，看一下檢驗標籤……',[
+  {t:'A 手套：外觀完好，標籤「10 個月前檢驗」',go:()=>{S.inv.add('絕緣手套（過期）');S.sub=2;ui();say([['you','拿了 A 手套。']])}},
+  {t:'B 手套：標籤「2 個月前檢驗」，吹氣檢點無漏氣',go:()=>{S.inv.add('絕緣手套（合格）');S.sub=2;ui();say([['you','拿了 B 手套，先做使用前檢點：吹氣捲起，沒有漏氣。']])}}]]]);
+ else if(S.step==4&&S.sub==1){S.inv.add('隔熱手套');say([['you','拿到「耐熱隔熱手套」。']],()=>{S.sub=2;ui()})}
+ else say([['you','工具櫃：各種手套、放電棒、驗電筆。目前不需要。']])},
+jie(){if(S.step<3)return say([['jie','我等一下要修耐壓機，到時候找你幫忙。']]);if(S.step>3)return say([['jie','有你幫忙上鎖，我修起來很安心。']]);
+ if(S.sub==0)say([['jie','耐壓測試機要換內部繼電器。先去左下角鎖具箱拿你的個人鎖和「禁止送電」標示牌。']],()=>{S.sub=1;ui()});
+ else if(S.sub==1)say([['jie','鎖具箱在配電盤下面。']]);
+ else loto(0)},
+lockbox(){if(S.step==3&&S.sub==1){S.inv.add('個人鎖＋標示牌');say([['you','拿到個人鎖與「危險・禁止送電」標示牌。']],()=>{S.sub=2;ui()})}else say([['you','LOTO 鎖具箱。']])},
+lin(){if(S.step<4)return say([['lin','老化測試還在跑。']]);if(S.step>4)return say([['lin','木塊換成電木板了，謝謝！']]);
+ if(S.sub==2)return result('ok',{t:'斷電回溫、戴隔熱手套取出，撤除碳化木塊改電木板並加固定治具',why:'接觸前先降溫並使用防護具，同時消除起火與傾倒的來源。',law:4},()=>finishQuest(4,'ok'));
+ if(S.sub==1)return say([['lin','隔熱手套在工具櫃。']]);
+ say([['lin','滿載老化剛跑完，產線在催貨！你幫我馬上把模組拿出來。'],['lin','啊對，控制板底下墊的木塊好像有點黑黑的……',[
+  {t:'馬上開門，徒手把模組抽出來',go:()=>result('hurt',{t:'徒手從剛結束的高溫箱取件',dmg:35,why:'手背碰到蓄熱的金屬層架，二度燙傷，模組掉落扯斷線束。',right:'斷電回溫後再開門，戴隔熱手套取出；層架設高溫警示。',law:4})},
+  {t:'先斷電等回溫，我去拿隔熱手套，木塊也要換掉',go:()=>{S.sub=1;ui();say([['lin','好，我先斷電。手套在工具櫃！']])}},
+  {t:'戴手套拿出來就好，木塊下次再換',go:()=>result('warn',{t:'取件但留下碳化木塊',flag:'wood',why:'燙傷避免了，但碳化木塊繼續在高溫下使用，可能悶燒起火。',right:'碳化木塊應立即撤除，改用電木板或耐溫矽膠墊。',law:4},()=>finishQuest(4,'warn'))}]]])},
+fang(){if(S.step<5)return say([['fang','眼睛好痠……']]);if(S.step>5)return say([['fang','現在光線很均勻，看缺陷清楚多了！']]);
+ if(S.sub==1)return say([['fang','遮光罩在物料架。']]);
+ if(S.sub==2){S.inv.delete('阻燃遮光罩');return say([['you','拆掉塑膠袋，換上阻燃遮光罩，再加一盞環形無影燈。'],['fang','哇，不刺眼了！不過我椅子後面那個層架，每次起身都會撞到……']],()=>{S.sub=3;ui()})}
+ if(S.sub==3)return say([['fang','層架就在我椅子正後方。']]);
+ say([['fang','LED 點亮後太亮看不清，前一班就拿黑色塑膠袋把工作燈罩起來。'],['fang','可是袋子裡面暗、外面亮，看久頭好暈……你覺得呢？',[
+  {t:'再套一層塑膠袋，遮得更暗',go:()=>result('hurt',{t:'用兩層塑膠袋包住通電燈具',dmg:30,why:'塑膠袋包住熱源，燈具過熱冒煙，熔化的塑膠滴落燙傷手臂。',right:'改用阻燃（UL 94 V-0）遮光罩並留散熱孔。',law:5})},
+  {t:'拆掉塑膠袋，我去拿阻燃遮光罩，順便配環形無影燈',go:()=>{S.sub=1;ui();say([['fang','太好了，物料架應該有！']])}},
+  {t:'不管它，把臉湊近一點看就好',go:()=>result('warn',{t:'維持塑膠袋罩燈',flag:'bag',why:'塑膠袋仍罩著通電燈具；長時間近距離注視也加速視覺疲勞。',right:'改善照明均勻度與明暗比，而不是讓人去適應不良照明。',law:5},()=>finishQuest(5,'warn'))}]]])},
+rack(){if(S.step==5&&S.sub==3){O.rack.on=false;rebuildSolid();result('ok',{t:'換阻燃遮光罩＋環形燈，移開座椅後方層架',why:'消除起火源、光線均勻不眩目，並恢復至少 80 公分的起身退離空間。',law:5},()=>finishQuest(5,'ok'))}else say([['you','大型金屬層架，緊貼著目檢座椅。']])},
+zhang(){if(S.step<6)return say([['zhang','唉唷我的腰……']]);if(S.step>6)return say([['zhang','作業台調高後，腰輕鬆多了。']]);
+ say([['zhang','這作業台太低，我一整天都彎著腰……'],['zhang','小安，幫我從後面推車拿一盒料！推車就在我腳跟後面。',[
+  {t:'直接轉身彎腰去拿',go:()=>result(S.flags.has('cart')?'dead':'hurt',{t:'轉身時腳跟勾到推車',dmg:40,why:S.flags.has('cart')?'你跌倒時，之前在漏電流站沒鎖煞車的推車也滑過來，連帶扯斷帶電線束——隱患串連成致命事故。':'腳跟勾到推車向後跌倒，後腦撞上棧板邊角。',right:'推車停到側邊黃線格並鎖煞車；作業台依手肘高度加高。',law:6})},
+  {t:'把推車移到黃線停放格鎖煞車，再回報加高作業台、鋪抗疲勞墊',go:()=>result('ok',{t:'黃線定位推車＋回報調整作業高度',why:'淨空身後空間，並從作業高度根本降低彎腰負荷。',law:6},()=>{O.cart2.x=21;O.cart2.y=13;rebuildSolidFull();finishQuest(6,'ok',()=>say([['zhang','謝啦！對了，出口 B 前面那堆棧板、還有那台立扇，有空也處理一下吧。'],['you','（支線任務：清除棧板與立扇。完成後回報王組長。）']]))})},
+  {t:'用腳把推車踢到旁邊',go:()=>result('hurt',{t:'用腳踢開推車',dmg:25,why:'推車失控撞上老張小腿，你自己也扭傷腳踝。',right:'推車要有固定停放位置並鎖住煞車。',law:6})}]]])},
+pallet(){if(!O.pallet.on)return;if(S.step<6)return say([['you','出口 B 前面堆著棧板。']]);O.pallet.on=false;S.flags.delete('pal');rebuildSolid();S.side.pallet=1;ui();say([['you','把棧板退縮到黃線內的指定堆放區，側門 B 恢復暢通。']])},
+fan(){if(!O.fan.on)return;if(S.step<6)return say([['you','一台立扇，底座卡在走道邊。']]);O.fan.on=false;rebuildSolid();S.side.fan=1;ui();say([['you','立扇移走，回報總務改成壁掛式。']])},
+cart(){say([['you','交流電源推車。'+(S.flags.has('cart')?'煞車還是沒鎖……':'')]])},
+cart2(){H.zhang()},
+mcc(){say([['you','配電盤 MCC-03。']])},oven(){H.lin()},desk(){H.fang()},belt(){H.zhang()},tester(){H.ming()},cab1(){H.ming()},cab2(){H.mei()},meter(){H.mei()}
+};
+function rebuildSolidFull(){for(let y=1;y<ROWS-1;y++)for(let x=1;x<23;x++)solid[y][x]=false;rebuildSolid()}
+const LOTO=['通知相關人員即將停機','停止設備運轉','拉下開關，隔離能源','上個人鎖、掛「禁止送電」標示','放電，釋放殘留能量','驗電確認無電壓，開始作業'];
+function loto(i){if(i==LOTO.length){S.inv.delete('個人鎖＋標示牌');return result('ok',{t:'依序完成上鎖掛牌六步驟',why:'能源被隔離上鎖，殘電已放掉並驗電確認，別人看到標示就不會送電。',law:3},()=>finishQuest(3,'ok'))}
+ const pool=shuffle([LOTO[i],...shuffle(LOTO.filter((_,k)=>k!=i)).slice(0,2)]);
+ say([['jie',i==0?'好，照順序來。第 1 步是？':`第 ${i+1} 步呢？`,pool.map(t=>({t,go:()=>t==LOTO[i]?loto(i+1):result('dead',{t:`第 ${i+1} 步做了「${t}」`,why:'步驟順序錯誤：能源沒確實隔離、上鎖或確認無電就動手，同事不知情把電送回，或殘電瞬間放電。',right:LOTO.join(' → '),law:3})}))]])}
+/* ---------- 火警 ---------- */
+function startFire(){S.done.q7='ok';S.step=8;S.cp={x:3,y:3};const src=[...S.flags].filter(f=>firePos[f]);S.fire=src.map(f=>firePos[f]);S.smoke=new Map();S.fireT=0;ui();
+ if(!S.fire.length)say([['pa','（廣播）本次為消防演練，請依標示疏散。'],['you','還好我把隱患都清掉了，這只是演練……但還是要當真！']]);
+ else say([['you',`起火點是……${src.map(f=>fNames[f]).join('、')}！是我之前「先這樣」留下的隱患！`]])}
+function resetFire(){S.smoke=new Map();S.fireT=0}
+function tickFire(){if(S.step!=8||!S.fire.length||dlgOn||$('#ov').classList.contains('show'))return;S.fireT++;
+ if(S.fireT%45==0){const r=Math.min(7,S.fireT/45|0);S.fire.forEach(([fx,fy])=>{for(let y=1;y<ROWS-1;y++)for(let x=1;x<23;x++){const d=Math.abs(x-fx)+Math.abs(y-fy);if(d<=r&&!solid[y][x])S.smoke.set(x+','+y,1)}})}
+ const tx=P.x/TS|0,ty=P.y/TS|0;
+ if(S.fire.some(([fx,fy])=>Math.abs(tx-fx)+Math.abs(ty-fy)<=1)){S.fireT=0;return result('dead',{t:'穿越起火點',why:'你走進火源旁，被高熱與濃煙吞沒。',right:'遠離火源，壓低身體沿避難標示前往出口。',law:8})}
+ if(S.smoke.has(tx+','+ty)&&S.fireT%15==0){P.hp-=6;P.hurtT=10;if(P.hp<=0){S.fireT=0;result('dead',{t:'在濃煙中停留太久',why:'吸入過量濃煙失去意識。',right:'第一時間疏散，壓低身體、以濕布掩口鼻，沿綠色標示快速離開。',law:8})}ui()}}
+function checkExit(){if(S.step!=8||S.ended)return;const tx=P.x/TS|0,ty=P.y/TS|0;
+ if(tx==22&&ty==12&&O.pallet.on){return}
+ if(tx>=24){S.ended=true;end()}}
+function end(){const q=QUESTS.slice(1,7).map((_,i)=>S.done['q'+(i+1)]);const hz=S.flags.size+(O.pallet.on&&!S.flags.has('pal')?1:0)+(O.fan.on?1:0),bd=Object.keys(S.badge).length;
+ const grade=S.dead==0&&S.inj==0&&!hz&&bd==6?'A｜零災害之星':S.dead==0&&hz<=1&&bd>=4?'B｜還差一點細心':'C｜請重新受訓';
+ const box=$('#sign');box.className='sign end';
+ box.innerHTML=`<div class="hd">平安抵達集合點｜${grade}</div><div class="bd"><p>受傷 ${S.inj} 次、殉職 ${S.dead} 次；防呆徽章 ${bd}/6；留下的隱患 ${hz} 項${hz?'：'+[...S.flags].map(f=>fNames[f]).concat(O.pallet.on&&!S.flags.has('pal')?['出口 B 棧板']:[],O.fan.on?['走道立扇']:[]).join('、'):''}。</p><p>改善是把問題修好，防呆是讓問題「不能」再發生：做不到錯（連鎖、形狀限定）→ 錯了馬上知道（警示、系統卡控）→ 制度不讓它回來（標準化、稽核、教育訓練）。</p>
+ <p>六站任務：${q.map((k,i)=>`${QUESTS[i+1][1].split('：')[0]} ${k=='ok'?'✔':'⚠'}`).join('　')}</p>
+ <p>老師指定類別對應：電氣安全（耐壓、漏電流）、Lockout &amp; Tagout（配電盤）、Heat &amp; Cold（試驗箱）、Illumination（目檢）、Ergonomic／Slip-Trip（輸送帶）、Emergency Preparedness（火警）。</p>
+ <ul class="law">${LAW[8].map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="primary" id="go">再玩一次</button></div>`;
+ $('#ov').classList.add('show');$('#go').onclick=()=>location.reload()}
+/* ---------- 互動判定 ---------- */
+function nearest(){let best=null,bd=1.6*TS;const px=P.x,py=P.y;
+ for(const k in N){const n=N[k],d=Math.hypot((n.x+.5)*TS-px,(n.y+.5)*TS-py);if(d<bd){bd=d;best=['n',k]}}
+ for(const k in O){const o=O[k];if(!o.on||!H[k])continue;const dx=Math.max(o.x*TS-px,0,px-(o.x+o.w)*TS),dy=Math.max(o.y*TS-py,0,py-(o.y+o.h)*TS),d=Math.hypot(dx,dy)+8+(['belt','desk','oven','tester','cab1','cab2','meter','cart2','cart','mcc'].includes(k)?30:0);if(d<bd){bd=d;best=['o',k]}}
+ return best}
+function interact(){if(dlgOn||$('#ov').classList.contains('show'))return;const t=nearest();if(!t)return;
+ if(t[0]=='n'){const n=N[t[1]];P.dir=Math.abs(n.x+.5-P.x/TS)>Math.abs(n.y+.5-P.y/TS)?(n.x+.5>P.x/TS?'r':'l'):(n.y+.5>P.y/TS?'d':'u')}
+ H[t[1]]()}
+/* ---------- 移動 ---------- */
+const keys={};
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+ if(dlgOn&&/^[1-4]$/.test(k)&&choiceCb){e.preventDefault();const b=$('#ch').querySelectorAll('button')[+k-1];b&&b.click();return}
+ if(dlgOn&&(k==' '||k=='enter'||k=='e')){const nx=$('#nx');if(nx){e.preventDefault();nx.click()}return}
+ if(k==' '||k=='e'){e.preventDefault();interact();return}
+ if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){e.preventDefault();keys[k]=1;P.path=[]}});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0});
+$('#act').onclick=()=>{interact()};$('#menu').onclick=()=>$('#drawer').classList.add('show');$('#close').onclick=()=>$('#drawer').classList.remove('show');
+function blocked(x,y){const pts=[[x-9,y+4],[x+9,y+4],[x-9,y+14],[x+9,y+14]];return pts.some(([a,b])=>{const tx=a/TS|0,ty=b/TS|0;if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return true;if(S.step!=8&&tx>=23)return true;return solid[ty][tx]})}
+function bfs(sx,sy,gx,gy){const key=(x,y)=>x+','+y,prev=new Map([[key(sx,sy),null]]),q=[[sx,sy]];
+ while(q.length){const[x,y]=q.shift();if(x==gx&&y==gy)break;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=COLS||ny>=ROWS||solid[ny][nx]||(S.step!=8&&nx>=23)||prev.has(key(nx,ny)))continue;prev.set(key(nx,ny),[x,y]);q.push([nx,ny])}}
+ if(!prev.has(key(gx,gy)))return[];const p=[];let c=[gx,gy];while(c){p.unshift(c);c=prev.get(key(c[0],c[1]))}return p.slice(1)}
+function tapAt(cx0,cy0){const r=cv.getBoundingClientRect(),mx=(cx0-r.left)/view.s+view.x,my=(cy0-r.top)/view.s+view.y,tx=mx/TS|0,ty=my/TS|0;
+ for(const k in N){const n=N[k];if(Math.abs(n.x+.5-mx/TS)<.9&&Math.abs(n.y+.3-my/TS)<1.1){goNear(n.x,n.y,()=>H[k]());return}}
+ for(const k in O){const o=O[k];if(o.on&&H[k]&&tx>=o.x&&tx<o.x+o.w&&ty>=o.y&&ty<o.y+o.h){goNear(tx,ty,()=>H[k]());return}}
+ if(ty>=0&&ty<ROWS&&tx>=0&&tx<COLS&&!solid[ty][tx]){P.path=bfs(P.x/TS|0,P.y/TS|0,tx,ty);P.after=null}}
+let jt=null;const ovOpen=()=>$('#ov').classList.contains('show');
+cv.addEventListener('pointerdown',e=>{if(dlgOn||ovOpen())return;e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}jt={id:e.pointerId,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY,drag:false};hintOff=true});
+cv.addEventListener('pointermove',e=>{if(!jt||e.pointerId!==jt.id)return;jt.x=e.clientX;jt.y=e.clientY;if(!jt.drag&&Math.hypot(jt.x-jt.sx,jt.y-jt.sy)>14){jt.drag=true;P.path=[];P.after=null}});
+cv.addEventListener('pointerup',e=>{if(!jt||e.pointerId!==jt.id)return;const w=jt;jt=null;if(!w.drag)tapAt(w.sx,w.sy)});
+cv.addEventListener('pointercancel',()=>{jt=null});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+function goNear(gx,gy,cb){const opts=[[gx,gy+1],[gx-1,gy],[gx+1,gy],[gx,gy-1]].filter(([x,y])=>y>0&&y<ROWS&&!solid[y][x]);let best=null;
+ for(const[x,y]of opts){const p=bfs(P.x/TS|0,P.y/TS|0,x,y);if((P.x/TS|0)==x&&(P.y/TS|0)==y){best=[];break}if(p.length&&(!best||p.length<best.length))best=p}
+ if(best){P.path=best;P.after=cb;if(!best.length){P.after=null;cb()}}}
+function move(){if(dlgOn||$('#ov').classList.contains('show')){P.moving=false;return}
+ let dx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),dy=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
+ if(jt&&jt.drag){const vx=jt.x-jt.sx,vy=jt.y-jt.sy,l=Math.hypot(vx,vy)||1,m=Math.min(1,l/45);dx=vx/l*m;dy=vy/l*m}
+ if(!dx&&!dy&&P.path.length){const[tx,ty]=P.path[0],gx=(tx+.5)*TS,gy=(ty+.5)*TS-6;const ddx=gx-P.x,ddy=gy-P.y;if(Math.hypot(ddx,ddy)<4){P.x=gx;P.y=gy;P.path.shift();if(!P.path.length&&P.after){const a=P.after;P.after=null;a()}return}dx=Math.sign(Math.round(ddx/3));dy=Math.sign(Math.round(ddy/3))}
+ const sp=3.2;P.moving=!!(dx||dy);if(!P.moving)return;
+ if(Math.abs(dx)>=Math.abs(dy))P.dir=dx>0?'r':'l';else P.dir=dy>0?'d':'u';
+ const nx=P.x+dx*sp,ny=P.y+dy*sp;if(!blocked(nx,P.y))P.x=nx;if(!blocked(P.x,ny))P.y=ny;P.f+=.35;
+ if(S.step==8&&(P.x/TS|0)==22&&(P.y/TS|0)==12&&O.pallet.on){}
+ if(S.step==8&&O.pallet.on&&(P.x/TS|0)==21&&(P.y/TS|0)==12&&P.dir=='r'&&!S.bWarn){S.bWarn=1;result('dead',{t:'往堆滿棧板的側門 B 逃生',why:'棧板卡住門口，你在搬棧板時濃煙下降，吸入大量濃煙倒下。',right:'走標示清楚、隨時可用的出口 A；平時就要讓出口前不得堆放物料。',law:8,retry:()=>{S.bWarn=0}})}
+ checkExit()}
+/* ---------- 繪圖 ---------- */
+function drawObj(o){const x=o.x*TS,y=o.y*TS,w=o.w*TS,h=o.h*TS;cx.save();
+ const box=(c,r=6)=>{cx.fillStyle='#0003';cx.beginPath();cx.roundRect(x+3,y+6,w-4,h-4,r);cx.fill();cx.fillStyle=c;cx.beginPath();cx.roundRect(x+2,y+2,w-4,h-6,r);cx.fill()};
+ switch(o.draw){
+ case'cab':box('#e8b400');cx.fillStyle='#1f2326';cx.fillRect(x+8,y+6,w-16,h-16);cx.fillStyle='#f0c21a';cx.beginPath();cx.moveTo(x+w-4,y+4);cx.lineTo(x+w+10,y+10);cx.lineTo(x+w+10,y+h-4);cx.lineTo(x+w-4,y+h-6);cx.fill();break;
+ case'tester':box('#c9ccd0');cx.fillStyle='#1d4fd6';cx.fillRect(x+6,y+8,w-12,14);cx.fillStyle='#fff';cx.font='bold 9px sans-serif';cx.fillText(o.lbl,x+7,y+19);break;
+ case'box':box('#b98a55',2);cx.strokeStyle='#7a5631';cx.strokeRect(x+6,y+6,w-12,h-14);cx.strokeStyle='#d7261e';cx.lineWidth=3;cx.beginPath();cx.moveTo(x-30,y-6);cx.quadraticCurveTo(x,y+30,x+w/2,y+h/2);cx.stroke();break;
+ case'cart':box('#8f979e');cx.fillStyle='#111';[[8,h-6],[w-8,h-6]].forEach(([a,b])=>{cx.beginPath();cx.arc(x+a,y+b,4,0,7);cx.fill()});cx.fillStyle='#d9dcdf';cx.fillRect(x+6,y+6,w-12,10);break;
+ case'tool':box('#7b4fa0');cx.fillStyle='#fff';cx.font='bold 12px sans-serif';cx.fillText(o.lbl,x+18,y+24);break;
+ case'shelf':box('#8f979e');cx.strokeStyle='#5e666d';for(let i=1;i<3;i++){cx.beginPath();cx.moveTo(x+4,y+i*11);cx.lineTo(x+w-4,y+i*11);cx.stroke()}cx.fillStyle='#fff';cx.font='bold 12px sans-serif';cx.fillText(o.lbl,x+18,y+30);break;
+ case'mcc':box('#9aa3ab');for(let i=0;i<3;i++){cx.fillStyle='#2a2e32';cx.fillRect(x+8,y+10+i*38,24,26);cx.fillStyle=i==1?'#d7261e':'#13895a';cx.fillRect(x+14,y+16+i*38,12,8)}break;
+ case'lockbox':box('#d7261e');cx.fillStyle='#fff';cx.font='bold 10px sans-serif';cx.fillText('LOTO',x+7,y+22);break;
+ case'oven':box('#b8bec4');cx.fillStyle='#22262a';cx.fillRect(x+10,y+8,w-20,h-22);cx.fillStyle='#f6f4e8';cx.fillRect(x+16,y+12,w-32,20);cx.fillStyle='#111';cx.fillRect(x+w-36,y+h-14,28,8);cx.fillStyle='#ff5a3c';cx.font='9px sans-serif';cx.fillText('高溫',x+w-33,y+h-7);break;
+ case'desk':box('#1c6b5a');cx.fillStyle=S.flags.has('bag')||S.step<=5&&S.sub<2?'#111':'#e9e0f5';cx.beginPath();cx.moveTo(x+20,y);cx.lineTo(x+50,y);cx.lineTo(x+44,y+16);cx.lineTo(x+26,y+16);cx.fill();cx.fillStyle='#d8f0e8';cx.fillRect(x+80,y+8,40,20);break;
+ case'rack':box('#8f979e');cx.strokeStyle='#5e666d';cx.beginPath();cx.moveTo(x+4,y+17);cx.lineTo(x+w-4,y+17);cx.stroke();break;
+ case'belt':box('#555');cx.fillStyle='#777';for(let i=0;i<10;i++)cx.fillRect(x+6+i*19,y+8,12,h-20);break;
+ case'pallet':box('#b98a55',2);cx.strokeStyle='#7a5631';for(let i=1;i<4;i++){cx.beginPath();cx.moveTo(x+i*10,y+4);cx.lineTo(x+i*10,y+h-6);cx.stroke()}break;
+ case'fan':cx.fillStyle='#666';cx.beginPath();cx.arc(x+20,y+30,9,0,7);cx.fill();cx.fillStyle='#9fb3c8';cx.beginPath();cx.arc(x+20,y+12,11,0,7);cx.fill();break}
+ if(o.hz&&o.on&&S.step>=1){cx.fillStyle='#ffc400';cx.font='bold 16px sans-serif';cx.fillText('⚠',x+w-14,y+12)}
+ cx.restore()}
+function draw(){cx.setTransform(1,0,0,1,0,0);cx.fillStyle='#1d2024';cx.fillRect(0,0,cv.width,cv.height);
+ if(view.w>=VW)view.x=(VW-view.w)/2;else view.x=Math.max(0,Math.min(VW-view.w,P.x-view.w/2));
+ if(view.h>=VH)view.y=(VH-view.h)/2;else view.y=Math.max(0,Math.min(VH-view.h,P.y-view.h/2));
+ const k=dpr*view.s;cx.setTransform(k,0,0,k,-view.x*k,-view.y*k);
+ cx.fillStyle='#3b4045';cx.fillRect(0,0,VW,VH);
+ cx.fillStyle='#2f6b3f';cx.fillRect(24*TS,0,2*TS,cv.height);cx.fillStyle='#fff';cx.font='bold 14px sans-serif';cx.fillText('集合點',24*TS+16,1.4*TS);cx.font='22px sans-serif';cx.fillText('🚩',24*TS+28,2.6*TS);
+ zones.forEach(([x,y,w,h,l,c])=>{cx.fillStyle=c;cx.fillRect(x*TS,y*TS,w*TS,h*TS);cx.fillStyle='#ffffffaa';cx.font='bold 12px sans-serif';cx.fillText(l,x*TS+4,(y+h)*TS-6)});
+ for(let y=0;y<ROWS;y++)for(let x=0;x<COLS-2;x++){if(walk(x,y)){cx.fillStyle='#4a5056';cx.fillRect(x*TS,y*TS,TS,TS)}cx.strokeStyle='#ffffff10';cx.strokeRect(x*TS,y*TS,TS,TS)}
+ cx.strokeStyle='#ffc400';cx.lineWidth=3;cx.beginPath();cx.moveTo(TS,5*TS);cx.lineTo(23*TS,5*TS);cx.moveTo(TS,7*TS);cx.lineTo(11*TS,7*TS);cx.moveTo(12*TS,7*TS);cx.lineTo(23*TS,7*TS);cx.moveTo(11*TS,7*TS);cx.lineTo(11*TS,14*TS);cx.moveTo(12*TS,7*TS);cx.lineTo(12*TS,14*TS);cx.stroke();cx.lineWidth=1;
+ cx.fillStyle='#1d2024';for(let y=0;y<ROWS;y++)for(let x=0;x<24;x++)if((x==0||y==0||y==ROWS-1||x==23)&&!(x==23&&(y==2||y==12)))cx.fillRect(x*TS,y*TS,TS,TS);
+ cx.fillStyle='#13895a';cx.fillRect(23*TS,2*TS,TS,TS);cx.fillStyle='#fff';cx.font='bold 11px sans-serif';cx.fillText('出口A',23*TS+3,2*TS+24);
+ cx.fillStyle='#777';cx.fillRect(23*TS,12*TS,TS,TS);cx.fillStyle='#fff';cx.fillText('側門B',23*TS+3,12*TS+24);
+ if(S.step==8){cx.fillStyle='#13895a';for(let x=12;x<23;x+=2){cx.beginPath();cx.moveTo(x*TS+10,5.5*TS);cx.lineTo(x*TS+24,6*TS);cx.lineTo(x*TS+10,6.5*TS);cx.fill()}}
+ for(const k in O)if(O[k].on)drawObj(O[k]);
+ S.smoke.forEach((_,k)=>{const[x,y]=k.split(',').map(Number);cx.fillStyle='#9a9a9a88';cx.beginPath();cx.arc((x+.5)*TS+Math.sin(S.t/20+x)*4,(y+.5)*TS,24,0,7);cx.fill()});
+ if(S.step==8)S.fire.forEach(([x,y])=>{const fl=Math.sin(S.t/5)*4;cx.fillStyle='#ff5a1f';cx.beginPath();cx.arc((x+.5)*TS,(y+.5)*TS,20+fl,0,7);cx.fill();cx.fillStyle='#ffc400';cx.beginPath();cx.arc((x+.5)*TS,(y+.45)*TS,11+fl/2,0,7);cx.fill()});
+ const ents=Object.entries(N).map(([k,n])=>({y:(n.y+.5)*TS,f:()=>{chibi(cx,(n.x+.5)*TS,(n.y+.5)*TS-6,n,'d',0);const st=npcMark(k);if(st){cx.fillStyle=st=='!'?'#ffc400':'#fff';cx.font='bold 22px sans-serif';cx.fillText(st,(n.x+.5)*TS-5,(n.y-.35)*TS+Math.sin(S.t/8)*3)}cx.fillStyle='#fff';cx.font='11px sans-serif';cx.textAlign='center';cx.fillText(n.n.split(' ').pop(),(n.x+.5)*TS,(n.y+1)*TS+12);cx.textAlign='left'}}));
+ ents.push({y:P.y+6,f:()=>{if(P.hurtT>0&&P.hurtT%6<3)return;chibi(cx,P.x,P.y,PLAYER,P.dir,P.moving?P.f:0)}});
+ ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
+ const [,tk]=objective();if(tk&&!dlgOn){const[tx,ty]=tgtXY(tk);const bob=Math.sin(S.t/7)*5;cx.fillStyle='#ffc400';cx.beginPath();cx.moveTo(tx*TS,ty*TS-34+bob);cx.lineTo(tx*TS-10,ty*TS-50+bob);cx.lineTo(tx*TS+10,ty*TS-50+bob);cx.fill()}
+ const nb=nearest();if(nb&&!dlgOn&&!MOB){const[t,k]=nb;const px=t=='n'?(N[k].x+.5)*TS:(O[k].x+O[k].w/2)*TS,py=t=='n'?(N[k].y-.6)*TS:O[k].y*TS-6;cx.fillStyle='#000c';cx.beginPath();cx.roundRect(px-34,py-22,68,20,8);cx.fill();cx.fillStyle='#fff';cx.font='bold 12px sans-serif';cx.textAlign='center';cx.fillText('空白鍵／E',px,py-8);cx.textAlign='left'}
+ if(P.hurtT>0)P.hurtT--;
+ cx.setTransform(dpr,0,0,dpr,0,0);const SW=cv.width/dpr,SH=cv.height/dpr;
+ if(tk&&!dlgOn){const[tx,ty]=tgtXY(tk),sx=(tx*TS-view.x)*view.s,sy=(ty*TS-view.y)*view.s;
+  if(sx<0||sy<40||sx>SW||sy>SH){const cxs=SW/2,cys=SH/2,a=Math.atan2(sy-cys,sx-cxs),m=46,ex=Math.max(m,Math.min(SW-m,cxs+Math.cos(a)*SW)),ey=Math.max(m+40,Math.min(SH-m,cys+Math.sin(a)*SH));
+   cx.save();cx.translate(ex,ey);cx.rotate(a);cx.fillStyle='#ffc400';cx.strokeStyle='#000';cx.lineWidth=2;cx.beginPath();cx.moveTo(18,0);cx.lineTo(-10,-13);cx.lineTo(-10,13);cx.closePath();cx.fill();cx.stroke();cx.restore();
+   cx.fillStyle='#000c';cx.beginPath();cx.roundRect(ex-24,ey+16,48,20,8);cx.fill();cx.fillStyle='#ffc400';cx.font='bold 12px sans-serif';cx.textAlign='center';cx.fillText('任務',ex,ey+30);cx.textAlign='left'}}
+ if(jt&&jt.drag){const r=cv.getBoundingClientRect(),ax=jt.sx-r.left,ay=jt.sy-r.top,vx=jt.x-jt.sx,vy=jt.y-jt.sy,l=Math.min(45,Math.hypot(vx,vy)),an=Math.atan2(vy,vx);
+  cx.fillStyle='#ffffff22';cx.strokeStyle='#ffffff88';cx.lineWidth=3;cx.beginPath();cx.arc(ax,ay,48,0,7);cx.fill();cx.stroke();
+  cx.fillStyle='#ffc400cc';cx.beginPath();cx.arc(ax+Math.cos(an)*l,ay+Math.sin(an)*l,22,0,7);cx.fill()}
+ const ab=$('#act');if(MOB&&nb&&!dlgOn&&!ovOpen()){const[t,k]=nb;const lb=t=='n'?'💬 對話<br>'+esc(N[k].n.split(' ').pop()):'✋ 查看<br>'+esc(OL[k]||'');if(ab.dataset.k!=k){ab.innerHTML=lb;ab.dataset.k=k}ab.classList.add('on')}else{ab.classList.remove('on');ab.dataset.k=''}}
+const OL={box:'紙箱',shelf:'物料架',tool:'工具櫃',lockbox:'鎖具箱',rack:'層架',pallet:'棧板',fan:'立扇',cart:'推車',cart2:'推車',mcc:'配電盤',oven:'試驗箱',desk:'工位',belt:'輸送帶',tester:'測試機',cab1:'機櫃',cab2:'機櫃',meter:'測試機'};
+function npcMark(k){const need={boss:[0,7],ming:[1],mei:[2],jie:[3],lin:[4],fang:[5],zhang:[6]}[k];if(!need||!need.includes(S.step))return'';return(k=='boss'&&S.step==0)||S.sub==0?'!':'?'}
+/* ---------- UI ---------- */
+function ui(){$('#hpb').style.width=Math.max(0,P.hp)+'%';$('#hpb').style.background=P.hp>60?'#2ecc71':P.hp>30?'#e07b00':'#d7261e';$('#hpt').textContent=Math.max(0,P.hp);$('#ic').textContent=S.inj;$('#dc').textContent=S.dead;$('#bc').textContent=Object.keys(S.badge).length;
+ const[o]=objective();$('#obj').innerHTML=`<b>任務</b>　${esc(o)}`;
+ $('#ql').innerHTML=QUESTS.map(([k,t],i)=>{const d=S.done[k];return`<li class="${i==S.step?'on':d=='ok'?'ok':d=='warn'?'warn':''}">${d=='ok'?'✔':d=='warn'?'⚠':i==S.step?'▶':'・'} ${esc(t)}${d=='warn'?'（留下隱患）':''}${S.badge[i]?' 🛡防呆':S.prev[i]&&!S.badge[i]?' ↺復發':''}</li>`}).join('')+(S.step>=6?`<li class="${S.side.pallet?'ok':''}">${S.side.pallet?'✔':'・'} 支線：清除出口 B 前棧板</li><li class="${S.side.fan?'ok':''}">${S.side.fan?'✔':'・'} 支線：移走走道立扇</li>`:'');
+ $('#inv').innerHTML=S.inv.size?[...S.inv].map(i=>`<span>${esc(i)}</span>`).join(''):'<span>（空）</span>';
+ $('#ql2').innerHTML=$('#ql').innerHTML;$('#inv2').innerHTML=$('#inv').innerHTML;$('#mhp').textContent=Math.max(0,P.hp);$('#mbc').textContent=Object.keys(S.badge).length}
+function loop(){S.t++;move();tickFire();draw();requestAnimationFrame(loop)}
+rebuildSolid();resize();ui();loop();let hintOff=!MOB;setTimeout(()=>hintOff=true,15000);setInterval(()=>{$('#hint').style.display=!hintOff&&!dlgOn&&!ovOpen()?'block':'none'},200);
+say([['boss','歡迎來到 LED 模組組裝產線！你是新進作業員「小安」。'],['boss',MOB?'手指按住畫面拖曳就能走動；點一下地面會自動走過去，點人物就會走過去對話。靠近時右下角會出現大大的「對話」按鈕。':'用方向鍵或 WASD 走動，靠近人或設備按空白鍵對話；也可以直接點地圖或人物。頭上有「!」的人有任務要給你。'],['boss','先過來跟我報到吧！']]);
+window.__G={S,P,H,N,O,interact,startFire};
+}
+</script>
+</body>
+</html>
