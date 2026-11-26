@@ -135,7 +135,7 @@ function rebuildSolid(){for(const k in O){const o=O[k];for(let i=0;i<o.w;i++)for
 /* ---------- 人物 ---------- */
 const P={x:2.5*TS,y:3.5*TS,dir:'d',f:0,moving:false,hp:100,path:[],hurtT:0};
 const N={
- boss:{n:'張組長',x:3,y:2,c:'#6a1b9a',hat:'#fff',hair:'#333'},
+ boss:{n:'張堅琦組長',x:3,y:2,c:'#6a1b9a',hat:'#fff',hair:'#333'},
  ming:{n:'技術員 Eden',x:7,y:3,c:'#1e5aa8',hat:'#ffc400',hair:'#222'},
  mei:{n:'作業員 Alice',x:14,y:3,c:'#d14d8a',hat:'#fff',hair:'#5a2a1a',long:1},
  jie:{n:'維修課 宗錦',x:3,y:9,c:'#2e7d32',hat:'#ffc400',hair:'#222'},
@@ -162,16 +162,16 @@ function chibi(c,x,y,o,dir='d',f=0,scale=1){
 const PLAYER={c:'#1e3a8a',hat:'#ffc400',hair:'#2b1a10'};
 /* ---------- 狀態與任務 ---------- */
 const S={step:0,sub:0,inv:new Set(),flags:new Set(),inj:0,dead:0,done:{},fire:null,smoke:new Map(),t:0,ended:false,side:{pallet:0,fan:0},cp:{x:2.5,y:3.5},badge:{},prev:{}};
-const QUESTS=[['q0','向張組長報到'],['q1','耐壓測試站：協助 Eden'],['q2','漏電流測試站：協助 Alice'],['q3','配電盤：上鎖掛牌維修'],['q4','環境試驗箱：協助 Steven'],['q5','目檢工位：協助 Bella'],['q6','輸送帶：協助 Joe'],['q7','回報張組長'],['q8','火警！疏散到集合點']];
+const QUESTS=[['q0','向張堅琦組長報到'],['q1','耐壓測試站：協助 Eden'],['q2','漏電流測試站：協助 Alice'],['q3','配電盤：上鎖掛牌維修'],['q4','環境試驗箱：協助 Steven'],['q5','目檢工位：協助 Bella'],['q6','輸送帶：協助 Joe'],['q7','回報張堅琦組長'],['q8','火警！疏散到集合點']];
 const fNames={box:'耐壓站紙箱',cart:'漏電流站推車未鎖',wood:'試驗箱碳化木塊',bag:'目檢燈塑膠袋',loto:'上鎖掛牌只靠口頭提醒',pal:'出口 B 棧板又堆回來'};
 const firePos={box:[9,3],wood:[8,10],bag:[15,9]};
 function objective(){const s=S.step,u=S.sub,I=S.inv;
- const m={0:['和張組長說話','boss'],1:u==0?['到耐壓測試站找 Eden','ming']:u==1?['移除壓著測試線的紙箱','box']:u==2?['到物料架拿絕緣墊','shelf']:['把絕緣墊交給 Eden','ming'],
+ const m={0:['和張堅琦組長說話','boss'],1:u==0?['到耐壓測試站找 Eden','ming']:u==1?['移除壓著測試線的紙箱','box']:u==2?['到物料架拿絕緣墊','shelf']:['把絕緣墊交給 Eden','ming'],
  2:u==0?['到漏電流站找 Alice','mei']:u==1?['到工具櫃挑一雙絕緣手套','tool']:['把手套帶回給 Alice','mei'],
  3:u==0?['到配電盤找宗錦','jie']:u==1?['到鎖具箱拿個人鎖與標示牌','lockbox']:['回到宗錦身邊執行上鎖掛牌','jie'],
  4:u==0?['到環境試驗箱找 Steven','lin']:u==1?['到工具櫃拿隔熱手套','tool']:['回試驗箱處理','lin'],
  5:u==0?['到目檢工位找 Bella','fang']:u==1?['到物料架拿阻燃遮光罩','shelf']:u==2?['回目檢工位換上遮光罩','fang']:['移開 Bella 椅子後方的層架','rack'],
- 6:['到輸送帶找 Joe','zhang'],7:['回入口向張組長回報（支線：清除棧板、立扇）','boss'],8:['依綠色標示從出口 A 疏散到集合點','exitA']};
+ 6:['到輸送帶找 Joe','zhang'],7:['回入口向張堅琦組長回報（支線：清除棧板、立扇）','boss'],8:['依綠色標示從出口 A 疏散到集合點','exitA']};
  return m[s]||['',null]}
 function tgtXY(k){if(k=='exitA')return[24.5,2.5];if(N[k])return[N[k].x+.5,N[k].y+.5];const o=O[k];return[o.x+o.w/2,o.y+o.h/2]}
 /* ---------- 對話系統 ---------- */
@@ -224,7 +224,7 @@ function prevent(n,cb){const[who,opts,recur,apply,goodWhy]=PREV[n];
  say([[who,'這次處理好了！可是下一班的人不知道，過幾天可能又變回原樣……'],['boss','（無線電）納森，改善之後還要「防堵」。你覺得怎麼做才能讓它不再發生？',list]])}
 /* ---------- 各 NPC 與物件互動 ---------- */
 const H={
-boss(){if(S.step==0)say([['boss','納森早！我是張組長。今天線上有幾個「先這樣用」的克難做法，你跟著我巡一輪，把隱患一個一個處理掉。'],['boss','記住：任何設備在動、在通電，就不要伸手。先停、先隔離、先確認。'],['boss','第一站，耐壓測試站的 Eden 在找人幫忙，去吧！右上角黃色框是你的目前任務。']],()=>finishQuest(0,'ok'));
+boss(){if(S.step==0)say([['boss','納森早！我是張堅琦組長。今天線上有幾個「先這樣用」的克難做法，你跟著我巡一輪，把隱患一個一個處理掉。'],['boss','記住：任何設備在動、在通電，就不要伸手。先停、先隔離、先確認。'],['boss','第一站，耐壓測試站的 Eden 在找人幫忙，去吧！右上角黃色框是你的目前任務。']],()=>finishQuest(0,'ok'));
  else if(S.step==7)say([['boss','辛苦了！六站都巡完了。'],['you','組長，還有棧板跟立扇……'],['pa','（警報聲）嗶——嗶——火警！火警！'],['boss','是真的火警！納森，你要怎麼做？',[
   {t:'先回目檢工位拿手機和外套再走',go:()=>result('dead',{t:'回工位拿手機',why:'你折返進入濃煙區，煙層快速下降，在走道上失去方向倒下。',right:'聽到警報立即依標示疏散，不折返拿私人物品。',law:8})},
   {t:'壓低身體，依綠色標示往出口 A 疏散，到集合點報到',go:()=>{startFire();say([['boss','好！我去清點人數，集合點見！出口 A 在右上角綠色門。']])}},
@@ -279,7 +279,7 @@ rack(){if(S.step==5&&S.sub==3){O.rack.on=false;rebuildSolid();result('ok',{t:'�
 zhang(){if(S.step<6)return say([['zhang','唉唷我的腰……']]);if(S.step>6)return say([['zhang','作業台調高後，腰輕鬆多了。']]);
  say([['zhang','這作業台太低，我一整天都彎著腰……'],['zhang','納森，幫我從後面推車拿一盒料！推車就在我腳跟後面。',[
   {t:'直接轉身彎腰去拿',go:()=>result(S.flags.has('cart')?'dead':'hurt',{t:'轉身時腳跟勾到推車',dmg:40,why:S.flags.has('cart')?'你跌倒時，之前在漏電流站沒鎖煞車的推車也滑過來，連帶扯斷帶電線束——隱患串連成致命事故。':'腳跟勾到推車向後跌倒，後腦撞上棧板邊角。',right:'推車停到側邊黃線格並鎖煞車；作業台依手肘高度加高。',law:6})},
-  {t:'把推車移到黃線停放格鎖煞車，再回報加高作業台、鋪抗疲勞墊',go:()=>result('ok',{t:'黃線定位推車＋回報調整作業高度',why:'淨空身後空間，並從作業高度根本降低彎腰負荷。',law:6},()=>{O.cart2.x=21;O.cart2.y=13;rebuildSolidFull();finishQuest(6,'ok',()=>say([['zhang','謝啦！對了，出口 B 前面那堆棧板、還有那台立扇，有空也處理一下吧。'],['you','（支線任務：清除棧板與立扇。完成後回報張組長。）']]))})},
+  {t:'把推車移到黃線停放格鎖煞車，再回報加高作業台、鋪抗疲勞墊',go:()=>result('ok',{t:'黃線定位推車＋回報調整作業高度',why:'淨空身後空間，並從作業高度根本降低彎腰負荷。',law:6},()=>{O.cart2.x=21;O.cart2.y=13;rebuildSolidFull();finishQuest(6,'ok',()=>say([['zhang','謝啦！對了，出口 B 前面那堆棧板、還有那台立扇，有空也處理一下吧。'],['you','（支線任務：清除棧板與立扇。完成後回報張堅琦組長。）']]))})},
   {t:'用腳把推車踢到旁邊',go:()=>result('hurt',{t:'用腳踢開推車',dmg:25,why:'推車失控撞上 Joe 小腿，你自己也扭傷腳踝。',right:'推車要有固定停放位置並鎖住煞車。',law:6})}]]])},
 pallet(){if(!O.pallet.on)return;if(S.step<6)return say([['you','出口 B 前面堆著棧板。']]);O.pallet.on=false;S.flags.delete('pal');rebuildSolid();S.side.pallet=1;ui();say([['you','把棧板退縮到黃線內的指定堆放區，側門 B 恢復暢通。']])},
 fan(){if(!O.fan.on)return;if(S.step<6)return say([['you','一台立扇，底座卡在走道邊。']]);O.fan.on=false;rebuildSolid();S.side.fan=1;ui();say([['you','立扇移走，回報總務改成壁掛式。']])},
