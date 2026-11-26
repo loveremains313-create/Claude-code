@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>小安的安全班次</title>
+<title>納森的安全班次</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 /* VOICE: 像一款可愛的工廠 RPG，班長與同事用口語對話，結果卡講清楚法規
@@ -88,9 +88,9 @@ footer{font-size:12px;color:var(--mute);margin-top:12px}
 </style>
 </head>
 <body>
-<header><h1>小安的安全班次｜LED 產線工安 RPG</h1><p>走動・對話・接任務・排除隱患・設計防呆，選錯會受傷甚至殉職</p></header>
+<header><h1>納森的安全班次｜LED 產線工安 RPG</h1><p>走動・對話・接任務・排除隱患・設計防呆，選錯會受傷甚至殉職</p></header>
 <div class="wrap">
- <div class="mbar"><b class="t">小安的安全班次</b><span>❤ <b id="mhp">100</b></span><span>🛡 <b id="mbc">0</b>/6</span><button class="mbtn" id="menu">📋 任務</button></div>
+ <div class="mbar"><b class="t">納森的安全班次</b><span>❤ <b id="mhp">100</b></span><span>🛡 <b id="mbc">0</b>/6</span><button class="mbtn" id="menu">📋 任務</button></div>
  <div class="stage" id="stage">
   <canvas id="cv" width="1040" height="600" aria-label="工廠地圖"></canvas>
   <div class="hud"><div class="chip">❤ <div class="hp"><i id="hpb" style="width:100%"></i></div><span id="hpt">100</span></div><div class="chip">✚ 受傷 <b id="ic">0</b></div><div class="chip">✖ 殉職 <b id="dc">0</b></div><div class="chip">🛡 防呆 <b id="bc">0</b>/6</div></div>
@@ -135,13 +135,13 @@ function rebuildSolid(){for(const k in O){const o=O[k];for(let i=0;i<o.w;i++)for
 /* ---------- 人物 ---------- */
 const P={x:2.5*TS,y:3.5*TS,dir:'d',f:0,moving:false,hp:100,path:[],hurtT:0};
 const N={
- boss:{n:'王組長',x:3,y:2,c:'#6a1b9a',hat:'#fff',hair:'#333'},
- ming:{n:'技術員 阿明',x:7,y:3,c:'#1e5aa8',hat:'#ffc400',hair:'#222'},
- mei:{n:'作業員 小美',x:14,y:3,c:'#d14d8a',hat:'#fff',hair:'#5a2a1a',long:1},
- jie:{n:'維修課 阿傑',x:3,y:9,c:'#2e7d32',hat:'#ffc400',hair:'#222'},
- lin:{n:'品保 小林',x:8,y:11,c:'#0d7680',hat:'#fff',hair:'#333'},
- fang:{n:'目檢員 阿芳',x:14,y:9,c:'#e07b00',hat:'#fff',hair:'#3b2418',long:1},
- zhang:{n:'老張',x:19,y:12,c:'#455a64',hat:'#fff',hair:'#aaa',bend:1}};
+ boss:{n:'張組長',x:3,y:2,c:'#6a1b9a',hat:'#fff',hair:'#333'},
+ ming:{n:'技術員 Eden',x:7,y:3,c:'#1e5aa8',hat:'#ffc400',hair:'#222'},
+ mei:{n:'作業員 Alice',x:14,y:3,c:'#d14d8a',hat:'#fff',hair:'#5a2a1a',long:1},
+ jie:{n:'維修課 宗錦',x:3,y:9,c:'#2e7d32',hat:'#ffc400',hair:'#222'},
+ lin:{n:'品保 Steven',x:8,y:11,c:'#0d7680',hat:'#fff',hair:'#333'},
+ fang:{n:'目檢員 Bella',x:14,y:9,c:'#e07b00',hat:'#fff',hair:'#3b2418',long:1},
+ zhang:{n:'Joe',x:19,y:12,c:'#455a64',hat:'#fff',hair:'#aaa',bend:1}};
 function chibi(c,x,y,o,dir='d',f=0,scale=1){
  c.save();c.translate(x,y);c.scale(scale,scale);
  c.fillStyle='#0004';c.beginPath();c.ellipse(0,16,13,5,0,0,7);c.fill();
@@ -162,16 +162,16 @@ function chibi(c,x,y,o,dir='d',f=0,scale=1){
 const PLAYER={c:'#1e3a8a',hat:'#ffc400',hair:'#2b1a10'};
 /* ---------- 狀態與任務 ---------- */
 const S={step:0,sub:0,inv:new Set(),flags:new Set(),inj:0,dead:0,done:{},fire:null,smoke:new Map(),t:0,ended:false,side:{pallet:0,fan:0},cp:{x:2.5,y:3.5},badge:{},prev:{}};
-const QUESTS=[['q0','向王組長報到'],['q1','耐壓測試站：協助阿明'],['q2','漏電流測試站：協助小美'],['q3','配電盤：上鎖掛牌維修'],['q4','環境試驗箱：協助小林'],['q5','目檢工位：協助阿芳'],['q6','輸送帶：協助老張'],['q7','回報王組長'],['q8','火警！疏散到集合點']];
+const QUESTS=[['q0','向張組長報到'],['q1','耐壓測試站：協助 Eden'],['q2','漏電流測試站：協助 Alice'],['q3','配電盤：上鎖掛牌維修'],['q4','環境試驗箱：協助 Steven'],['q5','目檢工位：協助 Bella'],['q6','輸送帶：協助 Joe'],['q7','回報張組長'],['q8','火警！疏散到集合點']];
 const fNames={box:'耐壓站紙箱',cart:'漏電流站推車未鎖',wood:'試驗箱碳化木塊',bag:'目檢燈塑膠袋',loto:'上鎖掛牌只靠口頭提醒',pal:'出口 B 棧板又堆回來'};
 const firePos={box:[9,3],wood:[8,10],bag:[15,9]};
 function objective(){const s=S.step,u=S.sub,I=S.inv;
- const m={0:['和王組長說話','boss'],1:u==0?['到耐壓測試站找阿明','ming']:u==1?['移除壓著測試線的紙箱','box']:u==2?['到物料架拿絕緣墊','shelf']:['把絕緣墊交給阿明','ming'],
- 2:u==0?['到漏電流站找小美','mei']:u==1?['到工具櫃挑一雙絕緣手套','tool']:['把手套帶回給小美','mei'],
- 3:u==0?['到配電盤找阿傑','jie']:u==1?['到鎖具箱拿個人鎖與標示牌','lockbox']:['回到阿傑身邊執行上鎖掛牌','jie'],
- 4:u==0?['到環境試驗箱找小林','lin']:u==1?['到工具櫃拿隔熱手套','tool']:['回試驗箱處理','lin'],
- 5:u==0?['到目檢工位找阿芳','fang']:u==1?['到物料架拿阻燃遮光罩','shelf']:u==2?['回目檢工位換上遮光罩','fang']:['移開阿芳椅子後方的層架','rack'],
- 6:['到輸送帶找老張','zhang'],7:['回入口向王組長回報（支線：清除棧板、立扇）','boss'],8:['依綠色標示從出口 A 疏散到集合點','exitA']};
+ const m={0:['和張組長說話','boss'],1:u==0?['到耐壓測試站找 Eden','ming']:u==1?['移除壓著測試線的紙箱','box']:u==2?['到物料架拿絕緣墊','shelf']:['把絕緣墊交給 Eden','ming'],
+ 2:u==0?['到漏電流站找 Alice','mei']:u==1?['到工具櫃挑一雙絕緣手套','tool']:['把手套帶回給 Alice','mei'],
+ 3:u==0?['到配電盤找宗錦','jie']:u==1?['到鎖具箱拿個人鎖與標示牌','lockbox']:['回到宗錦身邊執行上鎖掛牌','jie'],
+ 4:u==0?['到環境試驗箱找 Steven','lin']:u==1?['到工具櫃拿隔熱手套','tool']:['回試驗箱處理','lin'],
+ 5:u==0?['到目檢工位找 Bella','fang']:u==1?['到物料架拿阻燃遮光罩','shelf']:u==2?['回目檢工位換上遮光罩','fang']:['移開 Bella 椅子後方的層架','rack'],
+ 6:['到輸送帶找 Joe','zhang'],7:['回入口向張組長回報（支線：清除棧板、立扇）','boss'],8:['依綠色標示從出口 A 疏散到集合點','exitA']};
  return m[s]||['',null]}
 function tgtXY(k){if(k=='exitA')return[24.5,2.5];if(N[k])return[N[k].x+.5,N[k].y+.5];const o=O[k];return[o.x+o.w/2,o.y+o.h/2]}
 /* ---------- 對話系統 ---------- */
@@ -179,7 +179,7 @@ let dq=[],dlgOn=false,choiceCb=null;
 function drawPor(who){const c=$('#por').getContext('2d');c.clearRect(0,0,84,84);c.fillStyle='#f3e5f5';c.fillRect(0,0,84,84);const o=who=='you'?PLAYER:N[who]||{c:'#6a1b9a',hat:'#fff',hair:'#333'};chibi(c,42,66,{...o,bend:0},'d',0,1.9)}
 function say(list,cb){dq=list.slice();dq.cb=cb;dlgOn=true;nextLine()}
 function nextLine(){const L=dq.shift();if(!L){$('#dlg').classList.remove('show');dlgOn=false;const cb=dq.cb;dq.cb=null;cb&&cb();return}
- $('#dlg').classList.add('show');drawPor(L[0]);$('#nm').textContent=L[0]=='you'?'小安（你）':L[0]=='pa'?'廣播':N[L[0]]?.n||L[0];$('#tx').textContent=L[1];
+ $('#dlg').classList.add('show');drawPor(L[0]);$('#nm').textContent=L[0]=='you'?'納森（你）':L[0]=='pa'?'廣播':N[L[0]]?.n||L[0];$('#tx').textContent=L[1];
  const ch=$('#ch');choiceCb=null;
  if(L[2]){ch.innerHTML=L[2].map((o,i)=>`<button data-i="${i}"><b>${i+1}</b>${esc(o.t)}</button>`).join('');choiceCb=i=>{const o=L[2][i];$('#dlg').classList.remove('show');dlgOn=false;dq=[];o.go()};
   ch.querySelectorAll('button').forEach(b=>b.onclick=()=>choiceCb(+b.dataset.i));if(!MOB)ch.querySelector('button').focus()}
@@ -214,27 +214,27 @@ function finishQuest(n,kind,after){if(kind=='ok'&&PREV[n]&&!S.prev[n]){S.prev[n]
  S.done['q'+n]=kind;S.step=n+1;S.sub=0;S.cp={x:P.x/TS,y:P.y/TS};ui();after&&after()}
 const PREV={
 1:['ming',['櫃門與圍籬加裝安全連鎖：門一開就切斷高壓輸出；地面劃紅色禁放區','貼一張「請勿放紙箱」標語，晨會再宣導一次','抓到放紙箱的人就記過'],'紙箱又被下一班放回測試機旁',()=>{O.box.on=true;rebuildSolid();S.flags.add('box')},'門開即斷電：做錯也傷不到人（防止型防呆）；紅色禁區讓違規一眼被看見（偵測型）。'],
-2:['mei',['工具借用登錄檢驗日，過期手套系統自動鎖定不能借；接線盒蓋加微動開關，蓋沒關就不能通電','在工具櫃貼「記得看標籤」','請小美以後自己記得檢查'],'下一班又借到過期手套、推車又沒鎖',()=>S.flags.add('cart'),'過期就借不出來、蓋沒關就通不了電：不靠記憶，錯誤直接被擋下。'],
+2:['mei',['工具借用登錄檢驗日，過期手套系統自動鎖定不能借；接線盒蓋加微動開關，蓋沒關就不能通電','在工具櫃貼「記得看標籤」','請 Alice 以後自己記得檢查'],'下一班又借到過期手套、推車又沒鎖',()=>S.flags.add('cart'),'過期就借不出來、蓋沒關就通不了電：不靠記憶，錯誤直接被擋下。'],
 3:['jie',['能源隔離點加鎖扣、一人一鎖一鑰，未上鎖無法開維修門；搭配維修許可單','口頭提醒維修人員記得上鎖','出事再追究責任'],'下次有人趕時間跳過上鎖',()=>S.flags.add('loto'),'實體鎖扣讓「沒上鎖就送電」做不到；許可單讓流程可追蹤稽核。'],
-4:['lin',['試驗箱門鎖與箱溫連鎖，溫度沒降門打不開；改用專用治具，形狀上就墊不進木塊','在箱門貼「小心燙」','交代小林以後記得換墊材'],'催貨時又有人墊回木塊',()=>S.flags.add('wood'),'溫度連鎖讓人無法在高溫時開門；治具形狀限定讓錯誤墊材放不進去。'],
+4:['lin',['試驗箱門鎖與箱溫連鎖，溫度沒降門打不開；改用專用治具，形狀上就墊不進木塊','在箱門貼「小心燙」','交代 Steven 以後記得換墊材'],'催貨時又有人墊回木塊',()=>S.flags.add('wood'),'溫度連鎖讓人無法在高溫時開門；治具形狀限定讓錯誤墊材放不進去。'],
 5:['fang',['改用內建遮光的標準燈具並列為公司料號，禁止自製遮蔽物，納入 5S 稽核','請大家不要再用塑膠袋','旁邊放一支滅火器就好'],'夜班覺得太亮，又套上塑膠袋',()=>S.flags.add('bag'),'標準燈具本身就遮光，沒有理由再自製；5S 稽核定期確認沒有回流。'],
-6:['zhang',['推車換成放手即煞的煞車，黃線定位格＋未歸位目視檢查；作業台改升降式','跟老張說轉身要小心','推車上貼「請鎖煞車」'],'棧板和推車又堆回走道',()=>{O.pallet.on=true;rebuildSolid();S.side.pallet=0;S.flags.add('pal')},'放手即煞＝忘了鎖也不會滑走；升降作業台從源頭消除彎腰。']};
+6:['zhang',['推車換成放手即煞的煞車，黃線定位格＋未歸位目視檢查；作業台改升降式','跟 Joe 說轉身要小心','推車上貼「請鎖煞車」'],'棧板和推車又堆回走道',()=>{O.pallet.on=true;rebuildSolid();S.side.pallet=0;S.flags.add('pal')},'放手即煞＝忘了鎖也不會滑走；升降作業台從源頭消除彎腰。']};
 function prevent(n,cb){const[who,opts,recur,apply,goodWhy]=PREV[n];
  const list=shuffle(opts.map((t,i)=>({t,go:()=>i==0?(S.badge[n]=1,result('ok',{t,why:'🛡 防呆生效：'+goodWhy,law:9,head:'🛡 防呆生效，不會再發生'},cb)):result('warn',{t,why:`治標不治本：標語、宣導、處罰都靠人的記憶與自律。結果——${recur}。`,right:opts[0],law:9,head:'⚠ 隱患復發'},()=>{apply();cb()})})));
- say([[who,'這次處理好了！可是下一班的人不知道，過幾天可能又變回原樣……'],['boss','（無線電）小安，改善之後還要「防堵」。你覺得怎麼做才能讓它不再發生？',list]])}
+ say([[who,'這次處理好了！可是下一班的人不知道，過幾天可能又變回原樣……'],['boss','（無線電）納森，改善之後還要「防堵」。你覺得怎麼做才能讓它不再發生？',list]])}
 /* ---------- 各 NPC 與物件互動 ---------- */
 const H={
-boss(){if(S.step==0)say([['boss','小安早！我是王組長。今天線上有幾個「先這樣用」的克難做法，你跟著我巡一輪，把隱患一個一個處理掉。'],['boss','記住：任何設備在動、在通電，就不要伸手。先停、先隔離、先確認。'],['boss','第一站，耐壓測試站的阿明在找人幫忙，去吧！右上角黃色框是你的目前任務。']],()=>finishQuest(0,'ok'));
- else if(S.step==7)say([['boss','辛苦了！六站都巡完了。'],['you','組長，還有棧板跟立扇……'],['pa','（警報聲）嗶——嗶——火警！火警！'],['boss','是真的火警！小安，你要怎麼做？',[
+boss(){if(S.step==0)say([['boss','納森早！我是張組長。今天線上有幾個「先這樣用」的克難做法，你跟著我巡一輪，把隱患一個一個處理掉。'],['boss','記住：任何設備在動、在通電，就不要伸手。先停、先隔離、先確認。'],['boss','第一站，耐壓測試站的 Eden 在找人幫忙，去吧！右上角黃色框是你的目前任務。']],()=>finishQuest(0,'ok'));
+ else if(S.step==7)say([['boss','辛苦了！六站都巡完了。'],['you','組長，還有棧板跟立扇……'],['pa','（警報聲）嗶——嗶——火警！火警！'],['boss','是真的火警！納森，你要怎麼做？',[
   {t:'先回目檢工位拿手機和外套再走',go:()=>result('dead',{t:'回工位拿手機',why:'你折返進入濃煙區，煙層快速下降，在走道上失去方向倒下。',right:'聽到警報立即依標示疏散，不折返拿私人物品。',law:8})},
   {t:'壓低身體，依綠色標示往出口 A 疏散，到集合點報到',go:()=>{startFire();say([['boss','好！我去清點人數，集合點見！出口 A 在右上角綠色門。']])}},
   {t:'走最近的側門 B，比較快',go:()=>{startFire();say([['boss','側門 B 前面還堆著東西……小心！你自己判斷，跟著標示走最安全。']])}}]]]);
  else say([['boss',S.step>=8?'快疏散！':'先完成目前任務，右上角有提示喔。']])},
 ming(){if(S.step<1)return say([['ming','你先去跟組長報到吧。']]);if(S.step>1)return say([['ming','謝啦！有絕緣墊踩起來安心多了。']]);
- if(S.sub==0)say([['ming','小安你來得剛好！耐壓測試正在跑，輸出 2.5 kV。'],['ming','夾具好像鬆了，你順手幫我壓一下好嗎？我手上在記錄。',[
+ if(S.sub==0)say([['ming','納森你來得剛好！耐壓測試正在跑，輸出 2.5 kV。'],['ming','夾具好像鬆了，你順手幫我壓一下好嗎？我手上在記錄。',[
   {t:'伸手把高壓夾按緊，反正很快',go:()=>result('dead',{t:'測試中伸手壓高壓夾',why:'2.5 kV 經手臂流向接地的金屬機櫃，電擊造成心室顫動。',right:'按 STOP 停止輸出 → 放電棒放電 → 檢電確認無電壓 → 才調整夾具。',law:1})},
   {t:'戴棉紗手套再去壓',go:()=>result('dead',{t:'戴棉紗手套壓高壓夾',why:'棉紗手套不是絕緣用防護具，汗濕更導電，高壓直接擊穿。',right:'不在通電狀態下接觸；停機、放電、檢電後再作業。',law:1})},
-  {t:'請阿明按 STOP，用放電棒放電、檢電確認後再調整',go:()=>say([['ming','有道理，停機放電，檢電歸零……好了，夾具重新夾好。'],['ming','對了，接地線壓在紙箱上、測試線還橫過走道，你幫我把紙箱拿走，再去物料架拿一塊絕緣墊來。']],()=>{S.sub=1;ui()})},
+  {t:'請 Eden 按 STOP，用放電棒放電、檢電確認後再調整',go:()=>say([['ming','有道理，停機放電，檢電歸零……好了，夾具重新夾好。'],['ming','對了，接地線壓在紙箱上、測試線還橫過走道，你幫我把紙箱拿走，再去物料架拿一塊絕緣墊來。']],()=>{S.sub=1;ui()})},
   {t:'按 STOP 後直接調整，紙箱跟線之後再說',go:()=>result('warn',{t:'只停機，不處理紙箱與通道電線',flag:'box',why:'這次沒有感電，但紙箱仍緊貼電氣、測試線還橫跨走道，留下火災與絆倒隱患。',right:'停機後還要放電、檢電，並移除可燃物、把電線移出通道。',law:1},()=>finishQuest(1,'warn'))}]]]);
  else if(S.sub==3){S.inv.delete('絕緣墊');say([['ming','絕緣墊鋪好了，測試線也改走線槽，乾淨多了！']],()=>result('ok',{t:'停機放電檢電、移除紙箱、鋪設絕緣墊',why:'能量歸零後才接觸，同時移除可燃物與通道上的移動電線。',law:1},()=>finishQuest(1,'ok')))}
  else say([['ming',S.sub==1?'紙箱在測試機右下方。':'物料架在右上角，工具櫃旁邊。']])},
@@ -277,10 +277,10 @@ fang(){if(S.step<5)return say([['fang','眼睛好痠……']]);if(S.step>5)retur
   {t:'不管它，把臉湊近一點看就好',go:()=>result('warn',{t:'維持塑膠袋罩燈',flag:'bag',why:'塑膠袋仍罩著通電燈具；長時間近距離注視也加速視覺疲勞。',right:'改善照明均勻度與明暗比，而不是讓人去適應不良照明。',law:5},()=>finishQuest(5,'warn'))}]]])},
 rack(){if(S.step==5&&S.sub==3){O.rack.on=false;rebuildSolid();result('ok',{t:'換阻燃遮光罩＋環形燈，移開座椅後方層架',why:'消除起火源、光線均勻不眩目，並恢復至少 80 公分的起身退離空間。',law:5},()=>finishQuest(5,'ok'))}else say([['you','大型金屬層架，緊貼著目檢座椅。']])},
 zhang(){if(S.step<6)return say([['zhang','唉唷我的腰……']]);if(S.step>6)return say([['zhang','作業台調高後，腰輕鬆多了。']]);
- say([['zhang','這作業台太低，我一整天都彎著腰……'],['zhang','小安，幫我從後面推車拿一盒料！推車就在我腳跟後面。',[
+ say([['zhang','這作業台太低，我一整天都彎著腰……'],['zhang','納森，幫我從後面推車拿一盒料！推車就在我腳跟後面。',[
   {t:'直接轉身彎腰去拿',go:()=>result(S.flags.has('cart')?'dead':'hurt',{t:'轉身時腳跟勾到推車',dmg:40,why:S.flags.has('cart')?'你跌倒時，之前在漏電流站沒鎖煞車的推車也滑過來，連帶扯斷帶電線束——隱患串連成致命事故。':'腳跟勾到推車向後跌倒，後腦撞上棧板邊角。',right:'推車停到側邊黃線格並鎖煞車；作業台依手肘高度加高。',law:6})},
-  {t:'把推車移到黃線停放格鎖煞車，再回報加高作業台、鋪抗疲勞墊',go:()=>result('ok',{t:'黃線定位推車＋回報調整作業高度',why:'淨空身後空間，並從作業高度根本降低彎腰負荷。',law:6},()=>{O.cart2.x=21;O.cart2.y=13;rebuildSolidFull();finishQuest(6,'ok',()=>say([['zhang','謝啦！對了，出口 B 前面那堆棧板、還有那台立扇，有空也處理一下吧。'],['you','（支線任務：清除棧板與立扇。完成後回報王組長。）']]))})},
-  {t:'用腳把推車踢到旁邊',go:()=>result('hurt',{t:'用腳踢開推車',dmg:25,why:'推車失控撞上老張小腿，你自己也扭傷腳踝。',right:'推車要有固定停放位置並鎖住煞車。',law:6})}]]])},
+  {t:'把推車移到黃線停放格鎖煞車，再回報加高作業台、鋪抗疲勞墊',go:()=>result('ok',{t:'黃線定位推車＋回報調整作業高度',why:'淨空身後空間，並從作業高度根本降低彎腰負荷。',law:6},()=>{O.cart2.x=21;O.cart2.y=13;rebuildSolidFull();finishQuest(6,'ok',()=>say([['zhang','謝啦！對了，出口 B 前面那堆棧板、還有那台立扇，有空也處理一下吧。'],['you','（支線任務：清除棧板與立扇。完成後回報張組長。）']]))})},
+  {t:'用腳把推車踢到旁邊',go:()=>result('hurt',{t:'用腳踢開推車',dmg:25,why:'推車失控撞上 Joe 小腿，你自己也扭傷腳踝。',right:'推車要有固定停放位置並鎖住煞車。',law:6})}]]])},
 pallet(){if(!O.pallet.on)return;if(S.step<6)return say([['you','出口 B 前面堆著棧板。']]);O.pallet.on=false;S.flags.delete('pal');rebuildSolid();S.side.pallet=1;ui();say([['you','把棧板退縮到黃線內的指定堆放區，側門 B 恢復暢通。']])},
 fan(){if(!O.fan.on)return;if(S.step<6)return say([['you','一台立扇，底座卡在走道邊。']]);O.fan.on=false;rebuildSolid();S.side.fan=1;ui();say([['you','立扇移走，回報總務改成壁掛式。']])},
 cart(){say([['you','交流電源推車。'+(S.flags.has('cart')?'煞車還是沒鎖……':'')]])},
@@ -394,7 +394,7 @@ function draw(){cx.setTransform(1,0,0,1,0,0);cx.fillStyle='#1d2024';cx.fillRect(
  S.smoke.forEach((_,k)=>{const[x,y]=k.split(',').map(Number);cx.fillStyle='#9a9a9a88';cx.beginPath();cx.arc((x+.5)*TS+Math.sin(S.t/20+x)*4,(y+.5)*TS,24,0,7);cx.fill()});
  if(S.step==8)S.fire.forEach(([x,y])=>{const fl=Math.sin(S.t/5)*4;cx.fillStyle='#ff5a1f';cx.beginPath();cx.arc((x+.5)*TS,(y+.5)*TS,20+fl,0,7);cx.fill();cx.fillStyle='#ffc400';cx.beginPath();cx.arc((x+.5)*TS,(y+.45)*TS,11+fl/2,0,7);cx.fill()});
  const ents=Object.entries(N).map(([k,n])=>({y:(n.y+.5)*TS,f:()=>{chibi(cx,(n.x+.5)*TS,(n.y+.5)*TS-6,n,'d',0);const st=npcMark(k);if(st){cx.fillStyle=st=='!'?'#ffc400':'#fff';cx.font='bold 22px sans-serif';cx.fillText(st,(n.x+.5)*TS-5,(n.y-.35)*TS+Math.sin(S.t/8)*3)}cx.fillStyle='#fff';cx.font='11px sans-serif';cx.textAlign='center';cx.fillText(n.n.split(' ').pop(),(n.x+.5)*TS,(n.y+1)*TS+12);cx.textAlign='left'}}));
- ents.push({y:P.y+6,f:()=>{if(P.hurtT>0&&P.hurtT%6<3)return;chibi(cx,P.x,P.y,PLAYER,P.dir,P.moving?P.f:0)}});
+ ents.push({y:P.y+6,f:()=>{if(P.hurtT>0&&P.hurtT%6<3)return;chibi(cx,P.x,P.y,PLAYER,P.dir,P.moving?P.f:0);cx.font='bold 12px sans-serif';const tw=cx.measureText('納森').width+14;cx.fillStyle='#1e3a8acc';cx.beginPath();cx.roundRect(P.x-tw/2,P.y+20,tw,17,8);cx.fill();cx.fillStyle='#ffc400';cx.textAlign='center';cx.fillText('納森',P.x,P.y+33);cx.textAlign='left'}});
  ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
  const [,tk]=objective();if(tk&&!dlgOn){const[tx,ty]=tgtXY(tk);const bob=Math.sin(S.t/7)*5;cx.fillStyle='#ffc400';cx.beginPath();cx.moveTo(tx*TS,ty*TS-34+bob);cx.lineTo(tx*TS-10,ty*TS-50+bob);cx.lineTo(tx*TS+10,ty*TS-50+bob);cx.fill()}
  const nb=nearest();if(nb&&!dlgOn&&!MOB){const[t,k]=nb;const px=t=='n'?(N[k].x+.5)*TS:(O[k].x+O[k].w/2)*TS,py=t=='n'?(N[k].y-.6)*TS:O[k].y*TS-6;cx.fillStyle='#000c';cx.beginPath();cx.roundRect(px-34,py-22,68,20,8);cx.fill();cx.fillStyle='#fff';cx.font='bold 12px sans-serif';cx.textAlign='center';cx.fillText('空白鍵／E',px,py-8);cx.textAlign='left'}
@@ -418,7 +418,7 @@ function ui(){$('#hpb').style.width=Math.max(0,P.hp)+'%';$('#hpb').style.backgro
  $('#ql2').innerHTML=$('#ql').innerHTML;$('#inv2').innerHTML=$('#inv').innerHTML;$('#mhp').textContent=Math.max(0,P.hp);$('#mbc').textContent=Object.keys(S.badge).length}
 function loop(){S.t++;move();tickFire();draw();requestAnimationFrame(loop)}
 rebuildSolid();resize();ui();loop();let hintOff=!MOB;setTimeout(()=>hintOff=true,15000);setInterval(()=>{$('#hint').style.display=!hintOff&&!dlgOn&&!ovOpen()?'block':'none'},200);
-say([['boss','歡迎來到 LED 模組組裝產線！你是新進作業員「小安」。'],['boss',MOB?'手指按住畫面拖曳就能走動；點一下地面會自動走過去，點人物就會走過去對話。靠近時右下角會出現大大的「對話」按鈕。':'用方向鍵或 WASD 走動，靠近人或設備按空白鍵對話；也可以直接點地圖或人物。頭上有「!」的人有任務要給你。'],['boss','先過來跟我報到吧！']]);
+say([['boss','歡迎來到 LED 模組組裝產線！你是新進作業員「納森」。'],['boss',MOB?'手指按住畫面拖曳就能走動；點一下地面會自動走過去，點人物就會走過去對話。靠近時右下角會出現大大的「對話」按鈕。':'用方向鍵或 WASD 走動，靠近人或設備按空白鍵對話；也可以直接點地圖或人物。頭上有「!」的人有任務要給你。'],['boss','先過來跟我報到吧！']]);
 window.__G={S,P,H,N,O,interact,startFire};
 }
 </script>
